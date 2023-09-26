@@ -346,8 +346,6 @@ Calling this method more than once on the same instance is a NO-OP.
 
 ### SocketServer
 
-<a id="server"></a> <!-- legacy id -->
-
 The `SocketServer` class is the main class in this package that implements the
 [`ServerInterface`](#serverinterface) and allows you to accept incoming
 streaming connections, such as plaintext TCP/IP or secure TLS connection streams.
@@ -518,10 +516,6 @@ given event loop instance.
 > Note that the `SocketServer` class is a concrete implementation for TCP/IP sockets.
   If you want to typehint in your higher-level protocol implementation, you SHOULD
   use the generic [`ServerInterface`](#serverinterface) instead.
-
-> Changelog v1.9.0: This class has been added with an improved constructor signature
-  as a replacement for the previous `Server` class in order to avoid any ambiguities.
-  The previous name has been deprecated and should not be used anymore.
 
 ### Advanced server usage
 
