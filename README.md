@@ -1156,18 +1156,6 @@ here in order to use the [default loop](https://github.com/reactphp/event-loop#l
 This value SHOULD NOT be given unless you're sure you want to explicitly use a
 given event loop instance.
 
-> Changelog v1.9.0: The constructur signature has been updated to take the
-> optional `$context` as the first parameter and the optional `$loop` as a second
-> argument. The previous signature has been deprecated and should not be used anymore.
->
-> ```php
-> // constructor signature as of v1.9.0
-> $connector = new React\Socket\Connector(array $context = [], ?LoopInterface $loop = null);
->
-> // legacy constructor signature before v1.9.0
-> $connector = new React\Socket\Connector(?LoopInterface $loop = null, array $context = []);
-> ```
-
 ### Advanced client usage
 
 #### TcpConnector
