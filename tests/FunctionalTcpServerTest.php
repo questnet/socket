@@ -358,11 +358,6 @@ class FunctionalTcpServerTest extends TestCase
 
     public function testEmitsConnectionWithInheritedContextOptions()
     {
-        if (defined('HHVM_VERSION') && version_compare(HHVM_VERSION, '3.13', '<')) {
-            // https://3v4l.org/hB4Tc
-            $this->markTestSkipped('Not supported on legacy HHVM < 3.13');
-        }
-
         $server = new TcpServer(0, null, array(
             'backlog' => 4
         ));

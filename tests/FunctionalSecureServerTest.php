@@ -14,16 +14,6 @@ class FunctionalSecureServerTest extends TestCase
 {
     const TIMEOUT = 2;
 
-    /**
-     * @before
-     */
-    public function setUpSkipTest()
-    {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestSkipped('Not supported on legacy HHVM');
-        }
-    }
-
     public function testClientCanConnectToServer()
     {
         $server = new TcpServer(0);
@@ -48,11 +38,11 @@ class FunctionalSecureServerTest extends TestCase
 
     public function testClientUsesTls13ByDefaultWhenSupportedByOpenSSL()
     {
-        if (PHP_VERSION_ID < 70000 || (PHP_VERSION_ID >= 70300 && PHP_VERSION_ID < 70400) || !$this->supportsTls13()) {
+        if ((PHP_VERSION_ID >= 70300 && PHP_VERSION_ID < 70400) || !$this->supportsTls13()) {
             // @link https://github.com/php/php-src/pull/3909 explicitly adds TLS 1.3 on PHP 7.4
             // @link https://github.com/php/php-src/pull/3317 implicitly limits to TLS 1.2 on PHP 7.3
-            // all older PHP versions support TLS 1.3 (provided OpenSSL supports it), but only PHP 7 allows checking the version
-            $this->markTestSkipped('Test requires PHP 7+ for crypto meta data (but excludes PHP 7.3 because it implicitly limits to TLS 1.2) and OpenSSL 1.1.1+ for TLS 1.3');
+            // all older PHP versions support TLS 1.3 (provided OpenSSL supports it)
+            $this->markTestSkipped('Test requires OpenSSL 1.1.1+ for TLS 1.3 but excludes PHP 7.3 because it implicitly limits to TLS 1.2');
         }
 
         $server = new TcpServer(0);
@@ -89,10 +79,6 @@ class FunctionalSecureServerTest extends TestCase
 
     public function testClientUsesTls12WhenCryptoMethodIsExplicitlyConfiguredByClient()
     {
-        if (PHP_VERSION_ID < 70000) {
-            $this->markTestSkipped('Test requires PHP 7+ for crypto meta data');
-        }
-
         $server = new TcpServer(0);
         $server = new SecureServer($server, null, array(
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
@@ -120,10 +106,6 @@ class FunctionalSecureServerTest extends TestCase
 
     public function testClientUsesTls12WhenCryptoMethodIsExplicitlyConfiguredByServer()
     {
-        if (PHP_VERSION_ID < 70000) {
-            $this->markTestSkipped('Test requires PHP 7+ for crypto meta data');
-        }
-
         $server = new TcpServer(0);
         $server = new SecureServer($server, null, array(
             'local_cert' => __DIR__ . '/../examples/localhost.pem',
@@ -151,10 +133,6 @@ class FunctionalSecureServerTest extends TestCase
 
     public function testClientUsesTls10WhenCryptoMethodIsExplicitlyConfiguredByClient()
     {
-        if (PHP_VERSION_ID < 70000) {
-            $this->markTestSkipped('Test requires PHP 7+ for crypto meta data');
-        }
-
         $server = new TcpServer(0);
         $server = new SecureServer($server, null, array(
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
@@ -459,7 +437,6 @@ class FunctionalSecureServerTest extends TestCase
     }
 
     /**
-     * @requires PHP 5.6
      * @depends testClientUsesTls10WhenCryptoMethodIsExplicitlyConfiguredByClient
      */
     public function testEmitsConnectionForNewTlsv11Connection()
@@ -486,7 +463,6 @@ class FunctionalSecureServerTest extends TestCase
     }
 
     /**
-     * @requires PHP 5.6
      * @depends testClientUsesTls10WhenCryptoMethodIsExplicitlyConfiguredByClient
      */
     public function testEmitsErrorForClientWithTlsVersionMismatch()

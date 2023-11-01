@@ -24,10 +24,6 @@ class SecureIntegrationTest extends TestCase
      */
     public function setUpConnector()
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestSkipped('Not supported on legacy HHVM');
-        }
-
         $this->server = new TcpServer(0);
         $this->server = new SecureServer($this->server, null, array(
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
@@ -96,14 +92,9 @@ class SecureIntegrationTest extends TestCase
     public function testSendDataWithEndToServerReceivesAllData()
     {
         // PHP can report EOF on TLS 1.3 stream before consuming all data, so
-        // we explicitly use older TLS version instead. Selecting TLS version
-        // requires PHP 5.6+, so skip legacy versions if TLS 1.3 is supported.
+        // we explicitly use older TLS version instead.
         // Continue if TLS 1.3 is not supported anyway.
         if ($this->supportsTls13()) {
-            if (!defined('STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT')) {
-                $this->markTestSkipped('TLS 1.3 supported, but this legacy PHP version does not support explicit choice');
-            }
-
             $this->connector = new SecureConnector(new TcpConnector(), null, array(
                 'verify_peer' => false,
                 'crypto_method' => STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT

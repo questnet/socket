@@ -10,7 +10,7 @@ class FdServerTest extends TestCase
 {
     public function testCtorAddsResourceToLoop()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -52,7 +52,7 @@ class FdServerTest extends TestCase
 
     public function testCtorThrowsForUnknownFdWithoutCallingCustomErrorHandler()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -86,7 +86,7 @@ class FdServerTest extends TestCase
 
     public function testCtorThrowsIfFdIsAFileAndNotASocket()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -107,7 +107,7 @@ class FdServerTest extends TestCase
 
     public function testCtorThrowsIfFdIsAConnectedSocketInsteadOfServerSocket()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -130,7 +130,7 @@ class FdServerTest extends TestCase
 
     public function testGetAddressReturnsSameAddressAsOriginalSocketForIpv4Socket()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -146,7 +146,7 @@ class FdServerTest extends TestCase
 
     public function testGetAddressReturnsSameAddressAsOriginalSocketForIpv4SocketGivenAsUrlToFd()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -162,7 +162,7 @@ class FdServerTest extends TestCase
 
     public function testGetAddressReturnsSameAddressAsOriginalSocketForIpv6Socket()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -182,7 +182,7 @@ class FdServerTest extends TestCase
 
     public function testGetAddressReturnsSameAddressAsOriginalSocketForUnixDomainSocket()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -204,7 +204,7 @@ class FdServerTest extends TestCase
 
     public function testGetAddressReturnsNullAfterClose()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -222,7 +222,7 @@ class FdServerTest extends TestCase
 
     public function testCloseRemovesResourceFromLoop()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -239,7 +239,7 @@ class FdServerTest extends TestCase
 
     public function testCloseTwiceRemovesResourceFromLoopOnce()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -257,7 +257,7 @@ class FdServerTest extends TestCase
 
     public function testResumeWithoutPauseIsNoOp()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -274,7 +274,7 @@ class FdServerTest extends TestCase
 
     public function testPauseRemovesResourceFromLoop()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -291,7 +291,7 @@ class FdServerTest extends TestCase
 
     public function testPauseAfterPauseIsNoOp()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -309,7 +309,7 @@ class FdServerTest extends TestCase
 
     public function testServerEmitsConnectionEventForNewConnection()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -338,7 +338,7 @@ class FdServerTest extends TestCase
 
     public function testEmitsErrorWhenAcceptListenerFailsWithoutCallingCustomErrorHandler()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 

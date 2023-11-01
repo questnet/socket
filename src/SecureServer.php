@@ -5,8 +5,6 @@ namespace React\Socket;
 use Evenement\EventEmitter;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
-use BadMethodCallException;
-use UnexpectedValueException;
 
 /**
  * The `SecureServer` class implements the `ServerInterface` and is responsible
@@ -118,16 +116,11 @@ final class SecureServer extends EventEmitter implements ServerInterface
      * @param ServerInterface|TcpServer $tcp
      * @param ?LoopInterface $loop
      * @param array $context
-     * @throws BadMethodCallException for legacy HHVM < 3.8 due to lack of support
      * @see TcpServer
      * @link https://www.php.net/manual/en/context.ssl.php for TLS context options
      */
     public function __construct(ServerInterface $tcp, LoopInterface $loop = null, array $context = array())
     {
-        if (!\function_exists('stream_socket_enable_crypto')) {
-            throw new \BadMethodCallException('Encryption not supported on your platform (HHVM < 3.8?)'); // @codeCoverageIgnore
-        }
-
         // default to empty passphrase to suppress blocking passphrase prompt
         $context += array(
             'passphrase' => ''

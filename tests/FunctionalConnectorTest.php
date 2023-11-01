@@ -37,10 +37,6 @@ class FunctionalConnectorTest extends TestCase
      */
     public function testConnectTwiceWithoutHappyEyeBallsOnlySendsSingleDnsQueryDueToLocalDnsCache()
     {
-        if ((DIRECTORY_SEPARATOR === '\\' && PHP_VERSION_ID < 70000) || defined('HHVM_VERSION')) {
-            $this->markTestSkipped('Not supported on Windows for PHP versions < 7.0 and legacy HHVM');
-        }
-
         $socket = stream_socket_server('udp://127.0.0.1:0', $errno, $errstr, STREAM_SERVER_BIND);
 
         $connector = new Connector(array(
@@ -79,9 +75,6 @@ class FunctionalConnectorTest extends TestCase
      */
     public function connectionToRemoteTCP4n6ServerShouldResultInOurIP()
     {
-        // max_nesting_level was set to 100 for PHP Versions < 5.4 which resulted in failing test for legacy PHP
-        ini_set('xdebug.max_nesting_level', 256);
-
         $connector = new Connector(array('happy_eyeballs' => true));
 
         $ip = \React\Async\await(\React\Promise\Timer\timeout($this->request('dual.tlund.se', $connector), self::TIMEOUT));
@@ -129,10 +122,6 @@ class FunctionalConnectorTest extends TestCase
 
     public function testCancelPendingTlsConnectionDuringTlsHandshakeShouldCloseTcpConnectionToServer()
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestSkipped('Not supported on legacy HHVM');
-        }
-
         $server = new TcpServer(0);
         $uri = str_replace('tcp://', 'tls://', $server->getAddress());
 

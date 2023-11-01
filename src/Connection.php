@@ -43,8 +43,8 @@ class Connection extends EventEmitter implements ConnectionInterface
 
     public function __construct($resource, LoopInterface $loop)
     {
-        // PHP < 7.3.3 (and PHP < 7.2.15) suffers from a bug where feof() might
-        // block with 100% CPU usage on fragmented TLS records.
+        // Legacy PHP < 7.3.3 (and PHP < 7.2.15) suffers from a bug where feof()
+        // might block with 100% CPU usage on fragmented TLS records.
         // We try to work around this by always consuming the complete receive
         // buffer at once to avoid stale data in TLS buffers. This is known to
         // work around high CPU usage for well-behaving peers, but this may
@@ -54,7 +54,7 @@ class Connection extends EventEmitter implements ConnectionInterface
         // @link https://bugs.php.net/bug.php?id=77390
         $clearCompleteBuffer = \PHP_VERSION_ID < 70215 || (\PHP_VERSION_ID >= 70300 && \PHP_VERSION_ID < 70303);
 
-        // PHP < 7.1.4 (and PHP < 7.0.18) suffers from a bug when writing big
+        // Legacy PHP < 7.1.4 suffers from a bug when writing big
         // chunks of data over TLS streams at once.
         // We try to work around this by limiting the write chunk size to 8192
         // bytes for older PHP versions only.
@@ -62,7 +62,7 @@ class Connection extends EventEmitter implements ConnectionInterface
         // affected versions. Please update your PHP version.
         // This applies to all streams because TLS may be enabled later on.
         // See https://github.com/reactphp/socket/issues/105
-        $limitWriteChunks = (\PHP_VERSION_ID < 70018 || (\PHP_VERSION_ID >= 70100 && \PHP_VERSION_ID < 70104));
+        $limitWriteChunks = \PHP_VERSION_ID < 70104;
 
         $this->input = new DuplexResourceStream(
             $resource,
@@ -157,22 +157,17 @@ class Connection extends EventEmitter implements ConnectionInterface
         }
 
         if ($this->unix) {
-            // remove trailing colon from address for HHVM < 3.19: https://3v4l.org/5C1lo
-            // note that technically ":" is a valid address, so keep this in place otherwise
-            if (\substr($address, -1) === ':' && \defined('HHVM_VERSION_ID') && \HHVM_VERSION_ID < 31900) {
-                $address = (string)\substr($address, 0, -1); // @codeCoverageIgnore
-            }
-
-            // work around unknown addresses should return null value: https://3v4l.org/5C1lo and https://bugs.php.net/bug.php?id=74556
-            // PHP uses "\0" string and HHVM uses empty string (colon removed above)
-            if ($address === '' || $address[0] === "\x00" ) {
+            // Legacy PHP < 7.1.7 may use "\0" string instead of false: https://3v4l.org/5C1lo and https://bugs.php.net/bug.php?id=74556
+            // Work around by returning null for "\0" string
+            if ($address[0] === "\x00" ) {
                 return null; // @codeCoverageIgnore
             }
 
             return 'unix://' . $address;
         }
 
-        // check if this is an IPv6 address which includes multiple colons but no square brackets
+        // Legacy PHP < 7.3 uses IPv6 address which includes multiple colons but no square brackets: https://bugs.php.net/bug.php?id=76136
+        // Work around by adding square brackets around IPv6 address when not already present
         $pos = \strrpos($address, ':');
         if ($pos !== false && \strpos($address, ':') < $pos && \substr($address, 0, 1) !== '[') {
             $address = '[' . \substr($address, 0, $pos) . ']:' . \substr($address, $pos + 1); // @codeCoverageIgnore

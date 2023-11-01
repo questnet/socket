@@ -138,7 +138,7 @@ class TcpConnectorTest extends TestCase
     public function connectionToInvalidNetworkShouldFailWithUnreachableError()
     {
         if (PHP_OS !== 'Linux' && !function_exists('socket_import_stream')) {
-            $this->markTestSkipped('Test requires either Linux or ext-sockets on PHP 5.4+');
+            $this->markTestSkipped('Test requires either Linux or ext-sockets');
         }
 
         $enetunreach = defined('SOCKET_ENETUNREACH') ? SOCKET_ENETUNREACH : 101;

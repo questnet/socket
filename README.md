@@ -472,7 +472,7 @@ $socket = new React\Socket\SocketServer('tls://127.0.0.1:8000', array(
 ```
 
 By default, this server supports TLSv1.0+ and excludes support for legacy
-SSLv2/SSLv3. As of PHP 5.6+ you can also explicitly choose the TLS version you
+SSLv2/SSLv3. You can also explicitly choose the TLS version you
 want to negotiate with the remote side:
 
 ```php
@@ -650,7 +650,7 @@ $server = new React\Socket\SecureServer($server, null, array(
 ```
 
 By default, this server supports TLSv1.0+ and excludes support for legacy
-SSLv2/SSLv3. As of PHP 5.6+ you can also explicitly choose the TLS version you
+SSLv2/SSLv3. You can also explicitly choose the TLS version you
 want to negotiate with the remote side:
 
 ```php
@@ -1087,7 +1087,7 @@ $connector->connect('tls://localhost:443')->then(function (React\Socket\Connecti
 ```
 
 By default, this connector supports TLSv1.0+ and excludes support for legacy
-SSLv2/SSLv3. As of PHP 5.6+ you can also explicitly choose the TLS version you
+SSLv2/SSLv3. You can also explicitly choose the TLS version you
 want to negotiate with the remote side:
 
 ```php
@@ -1370,7 +1370,7 @@ $secureConnector = new React\Socket\SecureConnector($dnsConnector, null, array(
 ```
 
 By default, this connector supports TLSv1.0+ and excludes support for legacy
-SSLv2/SSLv3. As of PHP 5.6+ you can also explicitly choose the TLS version you
+SSLv2/SSLv3. You can also explicitly choose the TLS version you
 want to negotiate with the remote side:
 
 ```php
@@ -1490,19 +1490,10 @@ composer require react/socket:^3@dev
 See also the [CHANGELOG](CHANGELOG.md) for details about version upgrades.
 
 This project aims to run on any platform and thus does not require any PHP
-extensions and supports running on legacy PHP 5.3 through current PHP 8+ and HHVM.
-It's *highly recommended to use the latest supported PHP version* for this project,
-partly due to its vast performance improvements and partly because legacy PHP
-versions require several workarounds as described below.
+extensions and supports running on PHP 7.1 through current PHP 8+.
+It's *highly recommended to use the latest supported PHP version* for this project.
 
-Secure TLS connections received some major upgrades starting with PHP 5.6, with
-the defaults now being more secure, while older versions required explicit
-context options.
-This library does not take responsibility over these context options, so it's
-up to consumers of this library to take care of setting appropriate context
-options as described above.
-
-PHP < 7.3.3 (and PHP < 7.2.15) suffers from a bug where feof() might
+Legacy PHP < 7.3.3 (and PHP < 7.2.15) suffers from a bug where feof() might
 block with 100% CPU usage on fragmented TLS records.
 We try to work around this by always consuming the complete receive
 buffer at once to avoid stale data in TLS buffers. This is known to
@@ -1511,20 +1502,12 @@ cause very large data chunks for high throughput scenarios. The buggy
 behavior can still be triggered due to network I/O buffers or
 malicious peers on affected versions, upgrading is highly recommended.
 
-PHP < 7.1.4 (and PHP < 7.0.18) suffers from a bug when writing big
+Legacy PHP < 7.1.4 suffers from a bug when writing big
 chunks of data over TLS streams at once.
 We try to work around this by limiting the write chunk size to 8192
 bytes for older PHP versions only.
 This is only a work-around and has a noticable performance penalty on
 affected versions.
-
-This project also supports running on HHVM.
-Note that really old HHVM < 3.8 does not support secure TLS connections, as it
-lacks the required `stream_socket_enable_crypto()` function.
-As such, trying to create a secure TLS connections on affected versions will
-return a rejected promise instead.
-This issue is also covered by our test suite, which will skip related tests
-on affected versions.
 
 ## Tests
 

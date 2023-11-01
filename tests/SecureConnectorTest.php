@@ -17,10 +17,6 @@ class SecureConnectorTest extends TestCase
      */
     public function setUpConnector()
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestSkipped('Not supported on legacy HHVM');
-        }
-
         $this->loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
         $this->tcp = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
         $this->connector = new SecureConnector($this->tcp, $this->loop);

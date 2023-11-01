@@ -5,9 +5,6 @@ namespace React\Socket;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
 use React\Promise;
-use BadMethodCallException;
-use InvalidArgumentException;
-use UnexpectedValueException;
 
 final class SecureConnector implements ConnectorInterface
 {
@@ -24,10 +21,6 @@ final class SecureConnector implements ConnectorInterface
 
     public function connect($uri)
     {
-        if (!\function_exists('stream_socket_enable_crypto')) {
-            return Promise\reject(new \BadMethodCallException('Encryption not supported on your platform (HHVM < 3.8?)')); // @codeCoverageIgnore
-        }
-
         if (\strpos($uri, '://') === false) {
             $uri = 'tls://' . $uri;
         }

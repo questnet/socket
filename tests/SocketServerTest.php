@@ -83,9 +83,6 @@ class SocketServerTest extends TestCase
 
     public function testConstructorCreatesExpectedUnixServer()
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestSkipped('Not supported on legacy HHVM');
-        }
         if (!in_array('unix', stream_get_transports())) {
             $this->markTestSkipped('Unix domain sockets (UDS) not supported on your platform (Windows?)');
         }
@@ -127,7 +124,7 @@ class SocketServerTest extends TestCase
 
     public function testConstructWithExistingFileDescriptorReturnsSameAddressAsOriginalSocketForIpv4Socket()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -219,11 +216,6 @@ class SocketServerTest extends TestCase
 
     public function testEmitsConnectionWithInheritedContextOptions()
     {
-        if (defined('HHVM_VERSION') && version_compare(HHVM_VERSION, '3.13', '<')) {
-            // https://3v4l.org/hB4Tc
-            $this->markTestSkipped('Not supported on legacy HHVM < 3.13');
-        }
-
         $socket = new SocketServer('127.0.0.1:0', array(
             'tcp' => array(
                 'backlog' => 4
@@ -248,10 +240,6 @@ class SocketServerTest extends TestCase
 
     public function testDoesNotEmitSecureConnectionForNewPlaintextConnectionThatIsIdle()
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestSkipped('Not supported on legacy HHVM');
-        }
-
         $socket = new SocketServer('tls://127.0.0.1:0', array(
             'tls' => array(
                 'local_cert' => __DIR__ . '/../examples/localhost.pem'

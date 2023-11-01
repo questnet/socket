@@ -68,7 +68,6 @@ final class UnixServer extends EventEmitter implements ServerInterface
         \set_error_handler(function ($_, $error) use (&$errno, &$errstr) {
             // PHP does not seem to report errno/errstr for Unix domain sockets (UDS) right now.
             // This only applies to UDS server sockets, see also https://3v4l.org/NAhpr.
-            // Parse PHP warning message containing unknown error, HHVM reports proper info at least.
             if (\preg_match('/\(([^\)]+)\)|\[(\d+)\]: (.*)/', $error, $match)) {
                 $errstr = isset($match[3]) ? $match['3'] : $match[1];
                 $errno = isset($match[2]) ? (int)$match[2] : 0;

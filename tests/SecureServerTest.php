@@ -8,16 +8,6 @@ use React\Promise\Promise;
 
 class SecureServerTest extends TestCase
 {
-    /**
-     * @before
-     */
-    public function setUpSkipTest()
-    {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestSkipped('Not supported on legacy HHVM');
-        }
-    }
-
     public function testConstructWithoutLoopAssignsLoopAutomatically()
     {
         $tcp = $this->getMockBuilder('React\Socket\ServerInterface')->getMock();

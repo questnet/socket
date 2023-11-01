@@ -62,22 +62,9 @@ final class TcpConnector implements ConnectorInterface
                 'SNI_enabled' => true,
                 'peer_name' => $args['hostname']
             );
-
-            // Legacy PHP < 5.6 ignores peer_name and requires legacy context options instead.
-            // The SNI_server_name context option has to be set here during construction,
-            // as legacy PHP ignores any values set later.
-            // @codeCoverageIgnoreStart
-            if (\PHP_VERSION_ID < 50600) {
-                $context['ssl'] += array(
-                    'SNI_server_name' => $args['hostname'],
-                    'CN_match' => $args['hostname']
-                );
-            }
-            // @codeCoverageIgnoreEnd
         }
 
-        // latest versions of PHP no longer accept any other URI components and
-        // HHVM fails to parse URIs with a query but no path, so let's simplify our URI here
+        // PHP 7.1.4 does not accept any other URI components (such as a query with no path), so let's simplify our URI here
         $remote = 'tcp://' . $parts['host'] . ':' . $parts['port'];
 
         $stream = @\stream_socket_client(
@@ -108,7 +95,7 @@ final class TcpConnector implements ConnectorInterface
                     // If we reach this point, we know the connection is dead, but we don't know the underlying error condition.
                     // @codeCoverageIgnoreStart
                     if (\function_exists('socket_import_stream')) {
-                        // actual socket errno and errstr can be retrieved with ext-sockets on PHP 5.4+
+                        // actual socket errno and errstr can be retrieved with ext-sockets
                         $socket = \socket_import_stream($stream);
                         $errno = \socket_get_option($socket, \SOL_SOCKET, \SO_ERROR);
                         $errstr = \socket_strerror($errno);
@@ -148,13 +135,6 @@ final class TcpConnector implements ConnectorInterface
         }, function () use ($loop, $stream, $uri) {
             $loop->removeWriteStream($stream);
             \fclose($stream);
-
-            // @codeCoverageIgnoreStart
-            // legacy PHP 5.3 sometimes requires a second close call (see tests)
-            if (\PHP_VERSION_ID < 50400 && \is_resource($stream)) {
-                \fclose($stream);
-            }
-            // @codeCoverageIgnoreEnd
 
             throw new \RuntimeException(
                 'Connection to ' . $uri . ' cancelled during TCP/IP handshake (ECONNABORTED)',

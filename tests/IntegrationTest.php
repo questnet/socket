@@ -37,10 +37,6 @@ class IntegrationTest extends TestCase
     /** @test */
     public function gettingEncryptedStuffFromGoogleShouldWork()
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestSkipped('Not supported on legacy HHVM');
-        }
-
         $secureConnector = new Connector(array());
 
         $conn = \React\Async\await($secureConnector->connect('tls://google.com:443'));
@@ -57,10 +53,6 @@ class IntegrationTest extends TestCase
     /** @test */
     public function gettingEncryptedStuffFromGoogleShouldWorkIfHostIsResolvedFirst()
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestSkipped('Not supported on legacy HHVM');
-        }
-
         $factory = new ResolverFactory();
         $dns = $factory->create('8.8.8.8');
 
@@ -301,9 +293,6 @@ class IntegrationTest extends TestCase
         $this->assertEquals(0, gc_collect_cycles());
     }
 
-    /**
-     * @requires PHP 7
-     */
     public function testWaitingForInvalidTlsConnectionShouldNotCreateAnyGarbageReferences()
     {
         if (class_exists('React\Promise\When')) {
@@ -379,10 +368,6 @@ class IntegrationTest extends TestCase
 
     public function testSelfSignedRejectsIfVerificationIsEnabled()
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestSkipped('Not supported on legacy HHVM');
-        }
-
         $connector = new Connector(array(
             'tls' => array(
                 'verify_peer' => true
@@ -395,10 +380,6 @@ class IntegrationTest extends TestCase
 
     public function testSelfSignedResolvesIfVerificationIsDisabled()
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestSkipped('Not supported on legacy HHVM');
-        }
-
         $connector = new Connector(array(
             'tls' => array(
                 'verify_peer' => false

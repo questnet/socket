@@ -323,10 +323,6 @@ class TcpServerTest extends TestCase
      */
     public function testEmitsTimeoutErrorWhenAcceptListenerFails(\RuntimeException $exception)
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestSkipped('Not supported on HHVM');
-        }
-
         $this->assertEquals('Unable to accept new connection: ' . socket_strerror(SOCKET_ETIMEDOUT) . ' (ETIMEDOUT)', $exception->getMessage());
         $this->assertEquals(SOCKET_ETIMEDOUT, $exception->getCode());
     }
@@ -335,9 +331,6 @@ class TcpServerTest extends TestCase
     {
         if (DIRECTORY_SEPARATOR === '\\') {
             $this->markTestSkipped('Windows supports listening on same port multiple times');
-        }
-        if (defined('HHVM_VERSION')) {
-            $this->markTestSkipped('Not supported on HHVM');
         }
 
         $this->setExpectedException(
