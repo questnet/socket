@@ -40,15 +40,21 @@ class HappyEyeBallsConnectorTest extends TestCase
         $this->assertInstanceOf('React\EventLoop\LoopInterface', $loop);
     }
 
+    public function testConstructWithInvalidLoopThrows()
+    {
+        $this->setExpectedException('InvalidArgumentException', 'Argument #1 ($loop) expected null|React\EventLoop\LoopInterface');
+        new HappyEyeBallsConnector('loop', $this->tcp, $this->resolver);
+    }
+
     public function testConstructWithoutRequiredConnectorThrows()
     {
-        $this->setExpectedException('InvalidArgumentException');
+        $this->setExpectedException('InvalidArgumentException', 'Argument #2 ($connector) expected React\Socket\ConnectorInterface');
         new HappyEyeBallsConnector(null, null, $this->resolver);
     }
 
     public function testConstructWithoutRequiredResolverThrows()
     {
-        $this->setExpectedException('InvalidArgumentException');
+        $this->setExpectedException('InvalidArgumentException', 'Argument #3 ($resolver) expected React\Dns\Resolver\ResolverInterface');
         new HappyEyeBallsConnector(null, $this->tcp);
     }
 

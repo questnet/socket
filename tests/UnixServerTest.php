@@ -29,6 +29,12 @@ class UnixServerTest extends TestCase
         $this->server = new UnixServer($this->uds);
     }
 
+    public function testCtorThrowsForInvalidLoop()
+    {
+        $this->setExpectedException('InvalidArgumentException', 'Argument #2 ($loop) expected null|React\EventLoop\LoopInterface');
+        new UnixServer($this->getRandomSocketUri(), 'loop');
+    }
+
     public function testConstructWithoutLoopAssignsLoopAutomatically()
     {
         unlink(str_replace('unix://', '', $this->uds));

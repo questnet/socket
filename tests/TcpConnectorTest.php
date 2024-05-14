@@ -12,6 +12,12 @@ class TcpConnectorTest extends TestCase
 {
     const TIMEOUT = 5.0;
 
+    public function testCtorThrowsForInvalidLoop()
+    {
+        $this->setExpectedException('InvalidArgumentException', 'Argument #1 ($loop) expected null|React\EventLoop\LoopInterface');
+        new TcpConnector('loop');
+    }
+
     public function testConstructWithoutLoopAssignsLoopAutomatically()
     {
         $connector = new TcpConnector();

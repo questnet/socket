@@ -44,6 +44,12 @@ class ServerTest extends TestCase
         $server = new Server('invalid URI', $loop);
     }
 
+    public function testCtorThrowsForInvalidLoop()
+    {
+        $this->setExpectedException('InvalidArgumentException', 'Argument #2 ($loop) expected null|React\EventLoop\LoopInterface');
+        new Server('127.0.0.1:0', 'loop');
+    }
+
     public function testConstructorCreatesExpectedTcpServer()
     {
         $server = new Server(0);

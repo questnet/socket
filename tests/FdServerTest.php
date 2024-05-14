@@ -50,6 +50,12 @@ class FdServerTest extends TestCase
         new FdServer('tcp://127.0.0.1:8080', $loop);
     }
 
+    public function testCtorThrowsForInvalidLoop()
+    {
+        $this->setExpectedException('InvalidArgumentException', 'Argument #2 ($loop) expected null|React\EventLoop\LoopInterface');
+        new FdServer(0, 'loop');
+    }
+
     public function testCtorThrowsForUnknownFdWithoutCallingCustomErrorHandler()
     {
         if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
