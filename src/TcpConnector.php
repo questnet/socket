@@ -12,7 +12,7 @@ final class TcpConnector implements ConnectorInterface
     private $loop;
     private $context;
 
-    public function __construct(LoopInterface $loop = null, array $context = [])
+    public function __construct(?LoopInterface $loop = null, array $context = [])
     {
         $this->loop = $loop ?? Loop::get();
         $this->context = $context;

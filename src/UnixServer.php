@@ -48,7 +48,7 @@ final class UnixServer extends EventEmitter implements ServerInterface
      * @throws \InvalidArgumentException if the listening address is invalid
      * @throws \RuntimeException if listening on this address fails (already in use etc.)
      */
-    public function __construct($path, LoopInterface $loop = null, array $context = [])
+    public function __construct($path, ?LoopInterface $loop = null, array $context = [])
     {
         $this->loop = $loop ?? Loop::get();
 

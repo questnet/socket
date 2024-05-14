@@ -75,7 +75,7 @@ final class FdServer extends EventEmitter implements ServerInterface
      * @throws \InvalidArgumentException if the listening address is invalid
      * @throws \RuntimeException if listening on this address fails (already in use etc.)
      */
-    public function __construct($fd, LoopInterface $loop = null)
+    public function __construct($fd, ?LoopInterface $loop = null)
     {
         if (\preg_match('#^php://fd/(\d+)$#', $fd, $m)) {
             $fd = (int) $m[1];

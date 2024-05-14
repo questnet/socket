@@ -126,7 +126,7 @@ final class TcpServer extends EventEmitter implements ServerInterface
      * @throws \InvalidArgumentException if the listening address is invalid
      * @throws \RuntimeException if listening on this address fails (already in use etc.)
      */
-    public function __construct($uri, LoopInterface $loop = null, array $context = [])
+    public function __construct($uri, ?LoopInterface $loop = null, array $context = [])
     {
         $this->loop = $loop ?? Loop::get();
 
