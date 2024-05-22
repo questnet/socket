@@ -4,9 +4,11 @@ namespace React\Tests\Socket;
 
 use React\Dns\Model\Message;
 use React\EventLoop\StreamSelectLoop;
-use React\Promise;
 use React\Promise\Deferred;
+use React\Promise\Promise;
 use React\Socket\HappyEyeBallsConnector;
+use function React\Promise\reject;
+use function React\Promise\resolve;
 
 class HappyEyeBallsConnectorTest extends TestCase
 {
@@ -40,27 +42,15 @@ class HappyEyeBallsConnectorTest extends TestCase
         $this->assertInstanceOf('React\EventLoop\LoopInterface', $loop);
     }
 
-    public function testConstructWithoutRequiredConnectorThrows()
-    {
-        $this->setExpectedException('InvalidArgumentException');
-        new HappyEyeBallsConnector(null, null, $this->resolver);
-    }
-
-    public function testConstructWithoutRequiredResolverThrows()
-    {
-        $this->setExpectedException('InvalidArgumentException');
-        new HappyEyeBallsConnector(null, $this->tcp);
-    }
-
     public function testHappyFlow()
     {
         $first = new Deferred();
         $this->resolver->expects($this->exactly(2))->method('resolveAll')->with($this->equalTo('example.com'), $this->anything())->willReturn($first->promise());
         $connection = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
-        $this->tcp->expects($this->exactly(1))->method('connect')->with($this->equalTo('1.2.3.4:80?hostname=example.com'))->willReturn(Promise\resolve($connection));
+        $this->tcp->expects($this->exactly(1))->method('connect')->with($this->equalTo('1.2.3.4:80?hostname=example.com'))->willReturn(resolve($connection));
 
         $promise = $this->connector->connect('example.com:80');
-        $first->resolve(array('1.2.3.4'));
+        $first->resolve(['1.2.3.4']);
 
         $resolvedConnection = null;
         $promise->then(function ($value) use (&$resolvedConnection) {
@@ -73,15 +63,15 @@ class HappyEyeBallsConnectorTest extends TestCase
     public function testThatAnyOtherPendingConnectionAttemptsWillBeCanceledOnceAConnectionHasBeenEstablished()
     {
         $connection = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
-        $lookupAttempts = array(
-            Promise\reject(new \Exception('error')),
-            Promise\resolve(array('1.2.3.4', '5.6.7.8', '9.10.11.12')),
-        );
-        $connectionAttempts = array(
-            new Promise\Promise(function () {}, $this->expectCallableOnce()),
-            Promise\resolve($connection),
-            new Promise\Promise(function () {}, $this->expectCallableNever()),
-        );
+        $lookupAttempts = [
+            reject(new \Exception('error')),
+            resolve(['1.2.3.4', '5.6.7.8', '9.10.11.12']),
+        ];
+        $connectionAttempts = [
+            new Promise(function () {}, $this->expectCallableOnce()),
+            resolve($connection),
+            new Promise(function () {}, $this->expectCallableNever()),
+        ];
         $this->resolver->expects($this->exactly(2))->method('resolveAll')->with($this->equalTo('example.com'), $this->anything())->will($this->returnCallback(function () use (&$lookupAttempts) {
             return array_shift($lookupAttempts);
         }));
@@ -103,7 +93,7 @@ class HappyEyeBallsConnectorTest extends TestCase
     public function testPassByResolverIfGivenIp()
     {
         $this->resolver->expects($this->never())->method('resolveAll');
-        $this->tcp->expects($this->once())->method('connect')->with($this->equalTo('127.0.0.1:80'))->will($this->returnValue(Promise\resolve(null)));
+        $this->tcp->expects($this->once())->method('connect')->with($this->equalTo('127.0.0.1:80'))->will($this->returnValue(resolve(null)));
 
         $this->connector->connect('127.0.0.1:80');
 
@@ -113,7 +103,7 @@ class HappyEyeBallsConnectorTest extends TestCase
     public function testPassByResolverIfGivenIpv6()
     {
         $this->resolver->expects($this->never())->method('resolveAll');
-        $this->tcp->expects($this->once())->method('connect')->with($this->equalTo('[::1]:80'))->will($this->returnValue(Promise\reject(new \Exception('reject'))));
+        $this->tcp->expects($this->once())->method('connect')->with($this->equalTo('[::1]:80'))->will($this->returnValue(reject(new \Exception('reject'))));
 
         $promise = $this->connector->connect('[::1]:80');
 
@@ -124,8 +114,8 @@ class HappyEyeBallsConnectorTest extends TestCase
 
     public function testPassThroughResolverIfGivenHost()
     {
-        $this->resolver->expects($this->exactly(2))->method('resolveAll')->with($this->equalTo('google.com'), $this->anything())->will($this->returnValue(Promise\resolve(array('1.2.3.4'))));
-        $this->tcp->expects($this->exactly(2))->method('connect')->with($this->equalTo('1.2.3.4:80?hostname=google.com'))->will($this->returnValue(Promise\reject(new \Exception('reject'))));
+        $this->resolver->expects($this->exactly(2))->method('resolveAll')->with($this->equalTo('google.com'), $this->anything())->will($this->returnValue(resolve(['1.2.3.4'])));
+        $this->tcp->expects($this->exactly(2))->method('connect')->with($this->equalTo('1.2.3.4:80?hostname=google.com'))->will($this->returnValue(reject(new \Exception('reject'))));
 
         $promise = $this->connector->connect('google.com:80');
 
@@ -136,8 +126,8 @@ class HappyEyeBallsConnectorTest extends TestCase
 
     public function testPassThroughResolverIfGivenHostWhichResolvesToIpv6()
     {
-        $this->resolver->expects($this->exactly(2))->method('resolveAll')->with($this->equalTo('google.com'), $this->anything())->will($this->returnValue(Promise\resolve(array('::1'))));
-        $this->tcp->expects($this->exactly(2))->method('connect')->with($this->equalTo('[::1]:80?hostname=google.com'))->will($this->returnValue(Promise\reject(new \Exception('reject'))));
+        $this->resolver->expects($this->exactly(2))->method('resolveAll')->with($this->equalTo('google.com'), $this->anything())->will($this->returnValue(resolve(['::1'])));
+        $this->tcp->expects($this->exactly(2))->method('connect')->with($this->equalTo('[::1]:80?hostname=google.com'))->will($this->returnValue(reject(new \Exception('reject'))));
 
         $promise = $this->connector->connect('google.com:80');
 
@@ -149,7 +139,7 @@ class HappyEyeBallsConnectorTest extends TestCase
     public function testPassByResolverIfGivenCompleteUri()
     {
         $this->resolver->expects($this->never())->method('resolveAll');
-        $this->tcp->expects($this->once())->method('connect')->with($this->equalTo('scheme://127.0.0.1:80/path?query#fragment'))->will($this->returnValue(Promise\reject(new \Exception('reject'))));
+        $this->tcp->expects($this->once())->method('connect')->with($this->equalTo('scheme://127.0.0.1:80/path?query#fragment'))->will($this->returnValue(reject(new \Exception('reject'))));
 
         $promise = $this->connector->connect('scheme://127.0.0.1:80/path?query#fragment');
 
@@ -160,8 +150,8 @@ class HappyEyeBallsConnectorTest extends TestCase
 
     public function testPassThroughResolverIfGivenCompleteUri()
     {
-        $this->resolver->expects($this->exactly(2))->method('resolveAll')->with($this->equalTo('google.com'), $this->anything())->will($this->returnValue(Promise\resolve(array('1.2.3.4'))));
-        $this->tcp->expects($this->exactly(2))->method('connect')->with($this->equalTo('scheme://1.2.3.4:80/path?query&hostname=google.com#fragment'))->will($this->returnValue(Promise\reject(new \Exception('reject'))));
+        $this->resolver->expects($this->exactly(2))->method('resolveAll')->with($this->equalTo('google.com'), $this->anything())->will($this->returnValue(resolve(['1.2.3.4'])));
+        $this->tcp->expects($this->exactly(2))->method('connect')->with($this->equalTo('scheme://1.2.3.4:80/path?query&hostname=google.com#fragment'))->will($this->returnValue(reject(new \Exception('reject'))));
 
         $promise = $this->connector->connect('scheme://google.com:80/path?query#fragment');
 
@@ -172,8 +162,8 @@ class HappyEyeBallsConnectorTest extends TestCase
 
     public function testPassThroughResolverIfGivenExplicitHost()
     {
-        $this->resolver->expects($this->exactly(2))->method('resolveAll')->with($this->equalTo('google.com'), $this->anything())->will($this->returnValue(Promise\resolve(array('1.2.3.4'))));
-        $this->tcp->expects($this->exactly(2))->method('connect')->with($this->equalTo('scheme://1.2.3.4:80/?hostname=google.de'))->will($this->returnValue(Promise\reject(new \Exception('reject'))));
+        $this->resolver->expects($this->exactly(2))->method('resolveAll')->with($this->equalTo('google.com'), $this->anything())->will($this->returnValue(resolve(['1.2.3.4'])));
+        $this->tcp->expects($this->exactly(2))->method('connect')->with($this->equalTo('scheme://1.2.3.4:80/?hostname=google.de'))->will($this->returnValue(reject(new \Exception('reject'))));
 
         $promise = $this->connector->connect('scheme://google.com:80/?hostname=google.de');
 
@@ -190,13 +180,13 @@ class HappyEyeBallsConnectorTest extends TestCase
         $deferred = new Deferred();
 
         $this->resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('google.com', Message::TYPE_AAAA),
-            array('google.com', Message::TYPE_A)
+            ['google.com', Message::TYPE_AAAA],
+            ['google.com', Message::TYPE_A]
         )->willReturnOnConsecutiveCalls(
-            $this->returnValue(Promise\resolve($ipv6)),
+            $this->returnValue(resolve($ipv6)),
             $this->returnValue($deferred->promise())
         );
-        $this->tcp->expects($this->any())->method('connect')->with($this->stringContains(']:80/?hostname=google.com'))->will($this->returnValue(Promise\reject(new \Exception('reject'))));
+        $this->tcp->expects($this->any())->method('connect')->with($this->stringContains(']:80/?hostname=google.com'))->will($this->returnValue(reject(new \Exception('reject'))));
 
         $this->connector->connect('scheme://google.com:80/?hostname=google.com');
 
@@ -215,13 +205,13 @@ class HappyEyeBallsConnectorTest extends TestCase
         $deferred = new Deferred();
 
         $this->resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('google.com', Message::TYPE_AAAA),
-            array('google.com', Message::TYPE_A)
+            ['google.com', Message::TYPE_AAAA],
+            ['google.com', Message::TYPE_A]
         )->willReturnOnConsecutiveCalls(
             $this->returnValue($deferred->promise()),
-            $this->returnValue(Promise\resolve($ipv4))
+            $this->returnValue(resolve($ipv4))
         );
-        $this->tcp->expects($this->any())->method('connect')->with($this->stringContains(':80/?hostname=google.com'))->will($this->returnValue(Promise\reject(new \Exception('reject'))));
+        $this->tcp->expects($this->any())->method('connect')->with($this->stringContains(':80/?hostname=google.com'))->will($this->returnValue(reject(new \Exception('reject'))));
 
         $this->connector->connect('scheme://google.com:80/?hostname=google.com');
 
@@ -248,16 +238,15 @@ class HappyEyeBallsConnectorTest extends TestCase
 
     public function testRejectsWithTcpConnectorRejectionIfGivenIp()
     {
-        $that = $this;
-        $promise = Promise\reject(new \RuntimeException('Connection failed'));
+        $promise = reject(new \RuntimeException('Connection failed'));
         $this->resolver->expects($this->never())->method('resolveAll');
         $this->tcp->expects($this->once())->method('connect')->with($this->equalTo('1.2.3.4:80'))->willReturn($promise);
 
         $promise = $this->connector->connect('1.2.3.4:80');
-        $this->loop->addTimer(0.5, function () use ($that, $promise) {
+        $this->loop->addTimer(0.5, function () use ($promise) {
             $promise->cancel();
 
-            $that->throwRejection($promise);
+            $this->throwRejection($promise);
         });
 
         $this->setExpectedException('RuntimeException', 'Connection failed');
@@ -266,14 +255,13 @@ class HappyEyeBallsConnectorTest extends TestCase
 
     public function testSkipConnectionIfDnsFails()
     {
-        $that = $this;
-        $this->resolver->expects($this->exactly(2))->method('resolveAll')->with($this->equalTo('example.invalid'), $this->anything())->willReturn(Promise\reject(new \RuntimeException('DNS error')));
+        $this->resolver->expects($this->exactly(2))->method('resolveAll')->with($this->equalTo('example.invalid'), $this->anything())->willReturn(reject(new \RuntimeException('DNS error')));
         $this->tcp->expects($this->never())->method('connect');
 
         $promise = $this->connector->connect('example.invalid:80');
 
-        $this->loop->addTimer(0.5, function () use ($that, $promise) {
-            $that->throwRejection($promise);
+        $this->loop->addTimer(0.5, function () use ($promise) {
+            $this->throwRejection($promise);
         });
 
         $this->setExpectedException('RuntimeException', 'Connection to tcp://example.invalid:80 failed during DNS lookup: DNS error');
@@ -282,17 +270,16 @@ class HappyEyeBallsConnectorTest extends TestCase
 
     public function testCancelDuringDnsCancelsDnsAndDoesNotStartTcpConnection()
     {
-        $that = $this;
-        $this->resolver->expects($this->exactly(2))->method('resolveAll')->with('example.com', $this->anything())->will($this->returnCallback(function () use ($that) {
-            return new Promise\Promise(function () { }, $that->expectCallableExactly(1));
+        $this->resolver->expects($this->exactly(2))->method('resolveAll')->with('example.com', $this->anything())->will($this->returnCallback(function () {
+            return new Promise(function () { }, $this->expectCallableExactly(1));
         }));
         $this->tcp->expects($this->never())->method('connect');
 
         $promise = $this->connector->connect('example.com:80');
-        $this->loop->addTimer(0.05, function () use ($that, $promise) {
+        $this->loop->addTimer(0.05, function () use ($promise) {
             $promise->cancel();
 
-            $that->throwRejection($promise);
+            $this->throwRejection($promise);
         });
 
         $this->setExpectedException(
@@ -305,7 +292,7 @@ class HappyEyeBallsConnectorTest extends TestCase
 
     public function testCancelDuringTcpConnectionCancelsTcpConnectionIfGivenIp()
     {
-        $pending = new Promise\Promise(function () { }, $this->expectCallableOnce());
+        $pending = new Promise(function () { }, $this->expectCallableOnce());
         $this->resolver->expects($this->never())->method('resolveAll');
         $this->tcp->expects($this->once())->method('connect')->with($this->equalTo('1.2.3.4:80'))->willReturn($pending);
 
@@ -332,25 +319,25 @@ class HappyEyeBallsConnectorTest extends TestCase
 
     public function provideIpvAddresses()
     {
-        $ipv6 = array(
-            array('1:2:3:4'),
-            array('1:2:3:4', '5:6:7:8'),
-            array('1:2:3:4', '5:6:7:8', '9:10:11:12'),
-        );
-        $ipv4 = array(
-            array('1.2.3.4'),
-            array('1.2.3.4', '5.6.7.8'),
-            array('1.2.3.4', '5.6.7.8', '9.10.11.12'),
-        );
+        $ipv6 = [
+            ['1:2:3:4'],
+            ['1:2:3:4', '5:6:7:8'],
+            ['1:2:3:4', '5:6:7:8', '9:10:11:12'],
+        ];
+        $ipv4 = [
+            ['1.2.3.4'],
+            ['1.2.3.4', '5.6.7.8'],
+            ['1.2.3.4', '5.6.7.8', '9.10.11.12']
+        ];
 
-        $ips = array();
+        $ips = [];
 
         foreach ($ipv6 as $v6) {
             foreach ($ipv4 as $v4) {
-                $ips[] = array(
+                $ips[] = [
                     $v6,
                     $v4
-                );
+                ];
             }
         }
 

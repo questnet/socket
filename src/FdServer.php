@@ -87,7 +87,7 @@ final class FdServer extends EventEmitter implements ServerInterface
             );
         }
 
-        $this->loop = $loop ?: Loop::get();
+        $this->loop = $loop ?? Loop::get();
 
         $errno = 0;
         $errstr = '';
@@ -95,8 +95,8 @@ final class FdServer extends EventEmitter implements ServerInterface
             // Match errstr from PHP's warning message.
             // fopen(php://fd/3): Failed to open stream: Error duping file descriptor 3; possibly it doesn't exist: [9]: Bad file descriptor
             \preg_match('/\[(\d+)\]: (.*)/', $error, $m);
-            $errno = isset($m[1]) ? (int) $m[1] : 0;
-            $errstr = isset($m[2]) ? $m[2] : $error;
+            $errno = (int) ($m[1] ?? 0);
+            $errstr = $m[2] ?? $error;
         });
 
         $this->master = \fopen('php://fd/' . $fd, 'r+');
@@ -183,15 +183,14 @@ final class FdServer extends EventEmitter implements ServerInterface
             return;
         }
 
-        $that = $this;
-        $this->loop->addReadStream($this->master, function ($master) use ($that) {
+        $this->loop->addReadStream($this->master, function ($master) {
             try {
                 $newSocket = SocketServer::accept($master);
             } catch (\RuntimeException $e) {
-                $that->emit('error', array($e));
+                $this->emit('error', [$e]);
                 return;
             }
-            $that->handleConnection($newSocket);
+            $this->handleConnection($newSocket);
         });
         $this->listening = true;
     }
@@ -213,6 +212,6 @@ final class FdServer extends EventEmitter implements ServerInterface
         $connection = new Connection($socket, $this->loop);
         $connection->unix = $this->unix;
 
-        $this->emit('connection', array($connection));
+        $this->emit('connection', [$connection]);
     }
 }

@@ -9,6 +9,9 @@ use React\Socket\Connector;
 use React\Socket\DnsConnector;
 use React\Socket\SecureConnector;
 use React\Socket\TcpConnector;
+use function React\Async\await;
+use function React\Promise\Timer\sleep;
+use function React\Promise\Timer\timeout;
 
 /** @group internet */
 class IntegrationTest extends TestCase
@@ -18,9 +21,9 @@ class IntegrationTest extends TestCase
     /** @test */
     public function gettingStuffFromGoogleShouldWork()
     {
-        $connector = new Connector(array());
+        $connector = new Connector([]);
 
-        $conn = \React\Async\await($connector->connect('google.com:80'));
+        $conn = await($connector->connect('google.com:80'));
         assert($conn instanceof ConnectionInterface);
 
         $this->assertContainsString(':80', $conn->getRemoteAddress());
@@ -37,9 +40,9 @@ class IntegrationTest extends TestCase
     /** @test */
     public function gettingEncryptedStuffFromGoogleShouldWork()
     {
-        $secureConnector = new Connector(array());
+        $secureConnector = new Connector([]);
 
-        $conn = \React\Async\await($secureConnector->connect('tls://google.com:443'));
+        $conn = await($secureConnector->connect('tls://google.com:443'));
         assert($conn instanceof ConnectionInterface);
 
         $conn->write("GET / HTTP/1.0\r\n\r\n");
@@ -63,7 +66,7 @@ class IntegrationTest extends TestCase
             $dns
         );
 
-        $conn = \React\Async\await($connector->connect('google.com:443'));
+        $conn = await($connector->connect('google.com:443'));
         assert($conn instanceof ConnectionInterface);
 
         $conn->write("GET / HTTP/1.0\r\n\r\n");
@@ -77,9 +80,9 @@ class IntegrationTest extends TestCase
     /** @test */
     public function gettingPlaintextStuffFromEncryptedGoogleShouldNotWork()
     {
-        $connector = new Connector(array());
+        $connector = new Connector([]);
 
-        $conn = \React\Async\await($connector->connect('google.com:443'));
+        $conn = await($connector->connect('google.com:443'));
         assert($conn instanceof ConnectionInterface);
 
         $this->assertContainsString(':443', $conn->getRemoteAddress());
@@ -102,12 +105,12 @@ class IntegrationTest extends TestCase
         $factory = new ResolverFactory();
         $dns = $factory->create('255.255.255.255');
 
-        $connector = new Connector(array(
+        $connector = new Connector([
             'dns' => $dns
-        ));
+        ]);
 
         $this->setExpectedException('RuntimeException');
-        \React\Async\await(\React\Promise\Timer\timeout($connector->connect('google.com:80'), self::TIMEOUT));
+        await(timeout($connector->connect('google.com:80'), self::TIMEOUT));
     }
 
     public function testCancellingPendingConnectionWithoutTimeoutShouldNotCreateAnyGarbageReferences()
@@ -116,7 +119,7 @@ class IntegrationTest extends TestCase
             $this->markTestSkipped('Not supported on legacy Promise v1 API');
         }
 
-        $connector = new Connector(array('timeout' => false));
+        $connector = new Connector(['timeout' => false]);
 
         while (gc_collect_cycles()) {
             // collect all garbage cycles
@@ -135,7 +138,7 @@ class IntegrationTest extends TestCase
             $this->markTestSkipped('Not supported on legacy Promise v1 API');
         }
 
-        $connector = new Connector(array());
+        $connector = new Connector([]);
 
         while (gc_collect_cycles()) {
             // collect all garbage cycles
@@ -157,11 +160,11 @@ class IntegrationTest extends TestCase
         // let loop tick for reactphp/async v4 to clean up any remaining stream resources
         // @link https://github.com/reactphp/async/pull/65 reported upstream // TODO remove me once merged
         if (function_exists('React\Async\async')) {
-            \React\Async\await(\React\Promise\Timer\sleep(0));
+            await(sleep(0));
             Loop::run();
         }
 
-        $connector = new Connector(array('timeout' => false));
+        $connector = new Connector(['timeout' => false]);
 
         while (gc_collect_cycles()) {
             // collect all garbage cycles
@@ -176,11 +179,11 @@ class IntegrationTest extends TestCase
         );
 
         // run loop for short period to ensure we detect connection refused error
-        \React\Async\await(\React\Promise\Timer\sleep(0.01));
+        await(sleep(0.01));
         if ($wait) {
-            \React\Async\await(\React\Promise\Timer\sleep(0.2));
+            await(sleep(0.2));
             if ($wait) {
-                \React\Async\await(\React\Promise\Timer\sleep(2.0));
+                await(sleep(2.0));
                 if ($wait) {
                     $this->fail('Connection attempt did not fail');
                 }
@@ -197,7 +200,7 @@ class IntegrationTest extends TestCase
             $this->markTestSkipped('Not supported on legacy Promise v1 API');
         }
 
-        $connector = new Connector(array('timeout' => 0.001));
+        $connector = new Connector(['timeout' => 0.001]);
 
         while (gc_collect_cycles()) {
             // collect all garbage cycles
@@ -212,9 +215,9 @@ class IntegrationTest extends TestCase
         );
 
         // run loop for short period to ensure we detect a connection timeout error
-        \React\Async\await(\React\Promise\Timer\sleep(0.01));
+        await(sleep(0.01));
         if ($wait) {
-            \React\Async\await(\React\Promise\Timer\sleep(0.2));
+            await(sleep(0.2));
             if ($wait) {
                 $this->fail('Connection attempt did not fail');
             }
@@ -230,7 +233,7 @@ class IntegrationTest extends TestCase
             $this->markTestSkipped('Not supported on legacy Promise v1 API');
         }
 
-        $connector = new Connector(array('timeout' => 0.000001));
+        $connector = new Connector(['timeout' => 0.000001]);
 
         while (gc_collect_cycles()) {
             // collect all garbage cycles
@@ -245,9 +248,9 @@ class IntegrationTest extends TestCase
         );
 
         // run loop for short period to ensure we detect a connection timeout error
-        \React\Async\await(\React\Promise\Timer\sleep(0.01));
+        await(sleep(0.01));
         if ($wait) {
-            \React\Async\await(\React\Promise\Timer\sleep(0.2));
+            await(sleep(0.2));
             if ($wait) {
                 $this->fail('Connection attempt did not fail');
             }
@@ -263,7 +266,7 @@ class IntegrationTest extends TestCase
             $this->markTestSkipped('Not supported on legacy Promise v1 API');
         }
 
-        $connector = new Connector(array('timeout' => false));
+        $connector = new Connector(['timeout' => false]);
 
         while (gc_collect_cycles()) {
             // collect all garbage cycles
@@ -278,11 +281,11 @@ class IntegrationTest extends TestCase
         );
 
         // run loop for short period to ensure we detect a DNS error
-        \React\Async\await(\React\Promise\Timer\sleep(0.01));
+        await(sleep(0.01));
         if ($wait) {
-            \React\Async\await(\React\Promise\Timer\sleep(0.2));
+            await(sleep(0.2));
             if ($wait) {
-                \React\Async\await(\React\Promise\Timer\sleep(2.0));
+                await(sleep(2.0));
                 if ($wait) {
                     $this->fail('Connection attempt did not fail');
                 }
@@ -299,11 +302,11 @@ class IntegrationTest extends TestCase
             $this->markTestSkipped('Not supported on legacy Promise v1 API');
         }
 
-        $connector = new Connector(array(
-            'tls' => array(
+        $connector = new Connector([
+            'tls' => [
                 'verify_peer' => true
-            )
-        ));
+            ]
+        ]);
 
         while (gc_collect_cycles()) {
             // collect all garbage cycles
@@ -318,11 +321,11 @@ class IntegrationTest extends TestCase
         );
 
         // run loop for short period to ensure we detect a TLS error
-        \React\Async\await(\React\Promise\Timer\sleep(0.01));
+        await(sleep(0.01));
         if ($wait) {
-            \React\Async\await(\React\Promise\Timer\sleep(0.4));
+            await(sleep(0.4));
             if ($wait) {
-                \React\Async\await(\React\Promise\Timer\sleep(self::TIMEOUT - 0.5));
+                await(sleep(self::TIMEOUT - 0.5));
                 if ($wait) {
                     $this->fail('Connection attempt did not fail');
                 }
@@ -339,7 +342,7 @@ class IntegrationTest extends TestCase
             $this->markTestSkipped('Not supported on legacy Promise v1 API');
         }
 
-        $connector = new Connector(array('timeout' => false));
+        $connector = new Connector(['timeout' => false]);
 
         while (gc_collect_cycles()) {
             // collect all garbage cycles
@@ -350,7 +353,7 @@ class IntegrationTest extends TestCase
                 $conn->close();
             }
         );
-        \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+        await(timeout($promise, self::TIMEOUT));
         unset($promise);
 
         $this->assertEquals(0, gc_collect_cycles());
@@ -358,35 +361,35 @@ class IntegrationTest extends TestCase
 
     public function testConnectingFailsIfTimeoutIsTooSmall()
     {
-        $connector = new Connector(array(
+        $connector = new Connector([
             'timeout' => 0.001
-        ));
+        ]);
 
         $this->setExpectedException('RuntimeException');
-        \React\Async\await(\React\Promise\Timer\timeout($connector->connect('google.com:80'), self::TIMEOUT));
+        await(timeout($connector->connect('google.com:80'), self::TIMEOUT));
     }
 
     public function testSelfSignedRejectsIfVerificationIsEnabled()
     {
-        $connector = new Connector(array(
-            'tls' => array(
+        $connector = new Connector([
+            'tls' => [
                 'verify_peer' => true
-            )
-        ));
+            ]
+        ]);
 
         $this->setExpectedException('RuntimeException');
-        \React\Async\await(\React\Promise\Timer\timeout($connector->connect('tls://self-signed.badssl.com:443'), self::TIMEOUT));
+        await(timeout($connector->connect('tls://self-signed.badssl.com:443'), self::TIMEOUT));
     }
 
     public function testSelfSignedResolvesIfVerificationIsDisabled()
     {
-        $connector = new Connector(array(
-            'tls' => array(
+        $connector = new Connector([
+            'tls' => [
                 'verify_peer' => false
-            )
-        ));
+            ]
+        ]);
 
-        $conn = \React\Async\await(\React\Promise\Timer\timeout($connector->connect('tls://self-signed.badssl.com:443'), self::TIMEOUT));
+        $conn = await(timeout($connector->connect('tls://self-signed.badssl.com:443'), self::TIMEOUT));
         assert($conn instanceof ConnectionInterface);
         $conn->close();
 

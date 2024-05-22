@@ -7,6 +7,9 @@ use React\Socket\ConnectionInterface;
 use React\Socket\SocketServer;
 use React\Socket\TcpConnector;
 use React\Socket\UnixConnector;
+use function React\Async\await;
+use function React\Promise\Timer\sleep;
+use function React\Promise\Timer\timeout;
 
 class SocketServerTest extends TestCase
 {
@@ -30,7 +33,7 @@ class SocketServerTest extends TestCase
 
     public function testCreateServerWithZeroPortAssignsRandomPort()
     {
-        $socket = new SocketServer('127.0.0.1:0', array());
+        $socket = new SocketServer('127.0.0.1:0', []);
         $this->assertNotEquals(0, $socket->getAddress());
         $socket->close();
     }
@@ -67,13 +70,13 @@ class SocketServerTest extends TestCase
 
     public function testConstructorCreatesExpectedTcpServer()
     {
-        $socket = new SocketServer('127.0.0.1:0', array());
+        $socket = new SocketServer('127.0.0.1:0', []);
 
         $connector = new TcpConnector();
         $promise = $connector->connect($socket->getAddress());
         $promise->then($this->expectCallableOnce(), $this->expectCallableNever());
 
-        $connection = \React\Async\await(\React\Promise\Timer\timeout($connector->connect($socket->getAddress()), self::TIMEOUT));
+        $connection = await(timeout($connector->connect($socket->getAddress()), self::TIMEOUT));
 
         $socket->close();
         $promise->then(function (ConnectionInterface $connection) {
@@ -87,13 +90,13 @@ class SocketServerTest extends TestCase
             $this->markTestSkipped('Unix domain sockets (UDS) not supported on your platform (Windows?)');
         }
 
-        $socket = new SocketServer($this->getRandomSocketUri(), array());
+        $socket = new SocketServer($this->getRandomSocketUri(), []);
 
         $connector = new UnixConnector();
         $connector->connect($socket->getAddress())
             ->then($this->expectCallableOnce(), $this->expectCallableNever());
 
-        $connection = \React\Async\await(\React\Promise\Timer\timeout($connector->connect($socket->getAddress()), self::TIMEOUT));
+        $connection = await(timeout($connector->connect($socket->getAddress()), self::TIMEOUT));
         assert($connection instanceof ConnectionInterface);
 
         unlink(str_replace('unix://', '', $connection->getRemoteAddress()));
@@ -109,7 +112,7 @@ class SocketServerTest extends TestCase
         }
 
         try {
-            new SocketServer('unix://' . __FILE__, array());
+            new SocketServer('unix://' . __FILE__, []);
             $this->fail();
         } catch (\RuntimeException $e) {
             if ($e->getCode() === 0) {
@@ -139,7 +142,7 @@ class SocketServerTest extends TestCase
 
     public function testEmitsErrorWhenUnderlyingTcpServerEmitsError()
     {
-        $socket = new SocketServer('127.0.0.1:0', array());
+        $socket = new SocketServer('127.0.0.1:0', []);
 
         $ref = new \ReflectionProperty($socket, 'server');
         $ref->setAccessible(true);
@@ -147,14 +150,14 @@ class SocketServerTest extends TestCase
 
         $error = new \RuntimeException();
         $socket->on('error', $this->expectCallableOnceWith($error));
-        $tcp->emit('error', array($error));
+        $tcp->emit('error', [$error]);
 
         $socket->close();
     }
 
     public function testEmitsConnectionForNewConnection()
     {
-        $socket = new SocketServer('127.0.0.1:0', array());
+        $socket = new SocketServer('127.0.0.1:0', []);
         $socket->on('connection', $this->expectCallableOnce());
 
         $peer = new Promise(function ($resolve, $reject) use ($socket) {
@@ -165,25 +168,25 @@ class SocketServerTest extends TestCase
 
         $client = stream_socket_client($socket->getAddress());
 
-        \React\Async\await(\React\Promise\Timer\timeout($peer, self::TIMEOUT));
+        await(timeout($peer, self::TIMEOUT));
 
         $socket->close();
     }
 
     public function testDoesNotEmitConnectionForNewConnectionToPausedServer()
     {
-        $socket = new SocketServer('127.0.0.1:0', array());
+        $socket = new SocketServer('127.0.0.1:0', []);
         $socket->pause();
         $socket->on('connection', $this->expectCallableNever());
 
         $client = stream_socket_client($socket->getAddress());
 
-        \React\Async\await(\React\Promise\Timer\sleep(0.1));
+        await(sleep(0.1));
     }
 
     public function testDoesEmitConnectionForNewConnectionToResumedServer()
     {
-        $socket = new SocketServer('127.0.0.1:0', array());
+        $socket = new SocketServer('127.0.0.1:0', []);
         $socket->pause();
         $socket->on('connection', $this->expectCallableOnce());
 
@@ -197,14 +200,14 @@ class SocketServerTest extends TestCase
 
         $socket->resume();
 
-        \React\Async\await(\React\Promise\Timer\timeout($peer, self::TIMEOUT));
+        await(timeout($peer, self::TIMEOUT));
 
         $socket->close();
     }
 
     public function testDoesNotAllowConnectionToClosedServer()
     {
-        $socket = new SocketServer('127.0.0.1:0', array());
+        $socket = new SocketServer('127.0.0.1:0', []);
         $socket->on('connection', $this->expectCallableNever());
         $address = $socket->getAddress();
         $socket->close();
@@ -216,11 +219,11 @@ class SocketServerTest extends TestCase
 
     public function testEmitsConnectionWithInheritedContextOptions()
     {
-        $socket = new SocketServer('127.0.0.1:0', array(
-            'tcp' => array(
+        $socket = new SocketServer('127.0.0.1:0', [
+            'tcp' => [
                 'backlog' => 4
-            )
-        ));
+            ]
+        ]);
 
         $peer = new Promise(function ($resolve, $reject) use ($socket) {
             $socket->on('connection', function (ConnectionInterface $connection) use ($resolve) {
@@ -231,25 +234,25 @@ class SocketServerTest extends TestCase
 
         $client = stream_socket_client($socket->getAddress());
 
-        $all = \React\Async\await(\React\Promise\Timer\timeout($peer, self::TIMEOUT));
+        $all = await(timeout($peer, self::TIMEOUT));
 
-        $this->assertEquals(array('socket' => array('backlog' => 4)), $all);
+        $this->assertEquals(['socket' => ['backlog' => 4]], $all);
 
         $socket->close();
     }
 
     public function testDoesNotEmitSecureConnectionForNewPlaintextConnectionThatIsIdle()
     {
-        $socket = new SocketServer('tls://127.0.0.1:0', array(
-            'tls' => array(
+        $socket = new SocketServer('tls://127.0.0.1:0', [
+            'tls' => [
                 'local_cert' => __DIR__ . '/../examples/localhost.pem'
-            )
-        ));
+            ]
+        ]);
         $socket->on('connection', $this->expectCallableNever());
 
         $client = stream_socket_client(str_replace('tls://', '', $socket->getAddress()));
 
-        \React\Async\await(\React\Promise\Timer\sleep(0.1));
+        await(sleep(0.1));
 
         $socket->close();
     }

@@ -423,13 +423,13 @@ Optionally, you can specify [TCP socket context options](https://www.php.net/man
 for the underlying stream socket resource like this:
 
 ```php
-$socket = new React\Socket\SocketServer('[::1]:8080', array(
-    'tcp' => array(
+$socket = new React\Socket\SocketServer('[::1]:8080', [
+    'tcp' => [
         'backlog' => 200,
         'so_reuseport' => true,
         'ipv6_v6only' => true
-    )
-));
+    ]
+]);
 ```
 
 > Note that available [socket context options](https://www.php.net/manual/en/context.socket.php),
@@ -447,11 +447,11 @@ which in its most basic form may look something like this if you're using a
 PEM encoded certificate file:
 
 ```php
-$socket = new React\Socket\SocketServer('tls://127.0.0.1:8080', array(
-    'tls' => array(
+$socket = new React\Socket\SocketServer('tls://127.0.0.1:8080', [
+    'tls' => [
         'local_cert' => 'server.pem'
-    )
-));
+    ]
+]);
 ```
 
 > Note that the certificate file will not be loaded on instantiation but when an
@@ -463,12 +463,12 @@ If your private key is encrypted with a passphrase, you have to specify it
 like this:
 
 ```php
-$socket = new React\Socket\SocketServer('tls://127.0.0.1:8000', array(
-    'tls' => array(
+$socket = new React\Socket\SocketServer('tls://127.0.0.1:8000', [
+    'tls' => [
         'local_cert' => 'server.pem',
         'passphrase' => 'secret'
-    )
-));
+    ]
+]);
 ```
 
 By default, this server supports TLSv1.0+ and excludes support for legacy
@@ -476,12 +476,12 @@ SSLv2/SSLv3. You can also explicitly choose the TLS version you
 want to negotiate with the remote side:
 
 ```php
-$socket = new React\Socket\SocketServer('tls://127.0.0.1:8000', array(
-    'tls' => array(
+$socket = new React\Socket\SocketServer('tls://127.0.0.1:8000', [
+    'tls' => [
         'local_cert' => 'server.pem',
         'crypto_method' => STREAM_CRYPTO_METHOD_TLSv1_2_SERVER
-    )
-));
+    ]
+]);
 ```
 
 > Note that available [TLS context options](https://www.php.net/manual/en/context.ssl.php),
@@ -588,11 +588,11 @@ Optionally, you can specify [socket context options](https://www.php.net/manual/
 for the underlying stream socket resource like this:
 
 ```php
-$server = new React\Socket\TcpServer('[::1]:8080', null, array(
+$server = new React\Socket\TcpServer('[::1]:8080', null, [
     'backlog' => 200,
     'so_reuseport' => true,
     'ipv6_v6only' => true
-));
+]);
 ```
 
 > Note that available [socket context options](https://www.php.net/manual/en/context.socket.php),
@@ -628,9 +628,9 @@ PEM encoded certificate file:
 
 ```php
 $server = new React\Socket\TcpServer(8000);
-$server = new React\Socket\SecureServer($server, null, array(
+$server = new React\Socket\SecureServer($server, null, [
     'local_cert' => 'server.pem'
-));
+]);
 ```
 
 > Note that the certificate file will not be loaded on instantiation but when an
@@ -643,10 +643,10 @@ like this:
 
 ```php
 $server = new React\Socket\TcpServer(8000);
-$server = new React\Socket\SecureServer($server, null, array(
+$server = new React\Socket\SecureServer($server, null, [
     'local_cert' => 'server.pem',
     'passphrase' => 'secret'
-));
+]);
 ```
 
 By default, this server supports TLSv1.0+ and excludes support for legacy
@@ -655,10 +655,10 @@ want to negotiate with the remote side:
 
 ```php
 $server = new React\Socket\TcpServer(8000);
-$server = new React\Socket\SecureServer($server, null, array(
+$server = new React\Socket\SecureServer($server, null, [
     'local_cert' => 'server.pem',
     'crypto_method' => STREAM_CRYPTO_METHOD_TLSv1_2_SERVER
-));
+]);
 ```
 
 > Note that available [TLS context options](https://www.php.net/manual/en/context.ssl.php),
@@ -971,9 +971,9 @@ If you want to revert to the old behavior of only doing an IPv4 lookup and
 only attempt a single IPv4 connection, you can set up the `Connector` like this:
 
 ```php
-$connector = new React\Socket\Connector(array(
+$connector = new React\Socket\Connector([
     'happy_eyeballs' => false
-));
+]);
 ```
 
 Similarly, you can also affect the default DNS behavior as follows.
@@ -985,9 +985,9 @@ If you explicitly want to use a custom DNS server (such as a local DNS relay or
 a company wide DNS server), you can set up the `Connector` like this:
 
 ```php
-$connector = new React\Socket\Connector(array(
+$connector = new React\Socket\Connector([
     'dns' => '127.0.1.1'
-));
+]);
 
 $connector->connect('localhost:80')->then(function (React\Socket\ConnectionInterface $connection) {
     $connection->write('...');
@@ -999,9 +999,9 @@ If you do not want to use a DNS resolver at all and want to connect to IP
 addresses only, you can also set up your `Connector` like this:
 
 ```php
-$connector = new React\Socket\Connector(array(
+$connector = new React\Socket\Connector([
     'dns' => false
-));
+]);
 
 $connector->connect('127.0.0.1:80')->then(function (React\Socket\ConnectionInterface $connection) {
     $connection->write('...');
@@ -1016,9 +1016,9 @@ can also set up your `Connector` like this:
 $dnsResolverFactory = new React\Dns\Resolver\Factory();
 $resolver = $dnsResolverFactory->createCached('127.0.1.1');
 
-$connector = new React\Socket\Connector(array(
+$connector = new React\Socket\Connector([
     'dns' => $resolver
-));
+]);
 
 $connector->connect('localhost:80')->then(function (React\Socket\ConnectionInterface $connection) {
     $connection->write('...');
@@ -1031,18 +1031,18 @@ respects your `default_socket_timeout` ini setting (which defaults to 60s).
 If you want a custom timeout value, you can simply pass this like this:
 
 ```php
-$connector = new React\Socket\Connector(array(
+$connector = new React\Socket\Connector([
     'timeout' => 10.0
-));
+]);
 ```
 
 Similarly, if you do not want to apply a timeout at all and let the operating
 system handle this, you can pass a boolean flag like this:
 
 ```php
-$connector = new React\Socket\Connector(array(
+$connector = new React\Socket\Connector([
     'timeout' => false
-));
+]);
 ```
 
 By default, the `Connector` supports the `tcp://`, `tls://` and `unix://`
@@ -1051,7 +1051,7 @@ pass boolean flags like this:
 
 ```php
 // only allow secure TLS connections
-$connector = new React\Socket\Connector(array(
+$connector = new React\Socket\Connector([
     'tcp' => false,
     'tls' => true,
     'unix' => false,
@@ -1070,15 +1070,15 @@ pass arrays of context options like this:
 
 ```php
 // allow insecure TLS connections
-$connector = new React\Socket\Connector(array(
-    'tcp' => array(
+$connector = new React\Socket\Connector([
+    'tcp' => [
         'bindto' => '192.168.0.1:0'
-    ),
-    'tls' => array(
+    ],
+    'tls' => [
         'verify_peer' => false,
         'verify_peer_name' => false
-    ),
-));
+    ],
+]);
 
 $connector->connect('tls://localhost:443')->then(function (React\Socket\ConnectionInterface $connection) {
     $connection->write('...');
@@ -1091,11 +1091,11 @@ SSLv2/SSLv3. You can also explicitly choose the TLS version you
 want to negotiate with the remote side:
 
 ```php
-$connector = new React\Socket\Connector(array(
-    'tls' => array(
+$connector = new React\Socket\Connector([
+    'tls' => [
         'crypto_method' => STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT
-    )
-));
+    ]
+]);
 ```
 
 > For more details about context options, please refer to the PHP documentation
@@ -1117,14 +1117,14 @@ $tls = new React\Socket\SecureConnector($tcp);
 
 $unix = new React\Socket\UnixConnector();
 
-$connector = new React\Socket\Connector(array(
+$connector = new React\Socket\Connector([
     'tcp' => $tcp,
     'tls' => $tls,
     'unix' => $unix,
 
     'dns' => false,
     'timeout' => false,
-));
+]);
 
 $connector->connect('google.com:80')->then(function (React\Socket\ConnectionInterface $connection) {
     $connection->write('...');
@@ -1192,9 +1192,9 @@ You can optionally pass additional
 to the constructor like this:
 
 ```php
-$tcpConnector = new React\Socket\TcpConnector(null, array(
+$tcpConnector = new React\Socket\TcpConnector(null, [
     'bindto' => '192.168.0.1:0'
-));
+]);
 ```
 
 Note that this class only allows you to connect to IP-port-combinations.
@@ -1363,10 +1363,10 @@ You can optionally pass additional
 to the constructor like this:
 
 ```php
-$secureConnector = new React\Socket\SecureConnector($dnsConnector, null, array(
+$secureConnector = new React\Socket\SecureConnector($dnsConnector, null, [
     'verify_peer' => false,
     'verify_peer_name' => false
-));
+]);
 ```
 
 By default, this connector supports TLSv1.0+ and excludes support for legacy
@@ -1374,9 +1374,9 @@ SSLv2/SSLv3. You can also explicitly choose the TLS version you
 want to negotiate with the remote side:
 
 ```php
-$secureConnector = new React\Socket\SecureConnector($dnsConnector, null, array(
+$secureConnector = new React\Socket\SecureConnector($dnsConnector, null, [
     'crypto_method' => STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT
-));
+]);
 ```
 
 > Advanced usage: Internally, the `SecureConnector` relies on setting up the

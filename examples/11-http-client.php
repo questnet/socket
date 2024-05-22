@@ -14,7 +14,7 @@
 use React\Socket\Connector;
 use React\Socket\ConnectionInterface;
 
-$host = isset($argv[1]) ? $argv[1] : 'www.google.com';
+$host = $argv[1] ?? 'www.google.com';
 
 require __DIR__ . '/../vendor/autoload.php';
 

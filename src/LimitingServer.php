@@ -3,8 +3,6 @@
 namespace React\Socket;
 
 use Evenement\EventEmitter;
-use Exception;
-use OverflowException;
 
 /**
  * The `LimitingServer` decorator wraps a given `ServerInterface` and is responsible
@@ -35,7 +33,7 @@ use OverflowException;
  */
 class LimitingServer extends EventEmitter implements ServerInterface
 {
-    private $connections = array();
+    private $connections = [];
     private $server;
     private $limit;
 
@@ -100,8 +98,8 @@ class LimitingServer extends EventEmitter implements ServerInterface
             $this->pauseOnLimit = $pauseOnLimit;
         }
 
-        $this->server->on('connection', array($this, 'handleConnection'));
-        $this->server->on('error', array($this, 'handleError'));
+        $this->server->on('connection', [$this, 'handleConnection']);
+        $this->server->on('error', [$this, 'handleError']);
     }
 
     /**
@@ -163,9 +161,8 @@ class LimitingServer extends EventEmitter implements ServerInterface
         }
 
         $this->connections[] = $connection;
-        $that = $this;
-        $connection->on('close', function () use ($that, $connection) {
-            $that->handleDisconnection($connection);
+        $connection->on('close', function () use ($connection) {
+            $this->handleDisconnection($connection);
         });
 
         // pause accepting new connections if limit exceeded
@@ -177,7 +174,7 @@ class LimitingServer extends EventEmitter implements ServerInterface
             }
         }
 
-        $this->emit('connection', array($connection));
+        $this->emit('connection', [$connection]);
     }
 
     /** @internal */
@@ -198,6 +195,6 @@ class LimitingServer extends EventEmitter implements ServerInterface
     /** @internal */
     public function handleError(\Exception $error)
     {
-        $this->emit('error', array($error));
+        $this->emit('error', [$error]);
     }
 }

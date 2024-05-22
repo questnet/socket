@@ -9,6 +9,9 @@ use React\Socket\ServerInterface;
 use React\Socket\SecureServer;
 use React\Socket\TcpConnector;
 use React\Socket\TcpServer;
+use function React\Async\await;
+use function React\Promise\all;
+use function React\Promise\Timer\timeout;
 
 class FunctionalSecureServerTest extends TestCase
 {
@@ -17,17 +20,17 @@ class FunctionalSecureServerTest extends TestCase
     public function testClientCanConnectToServer()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        ));
+        ]);
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => false
-        ));
+        ]);
         $promise = $connector->connect($server->getAddress());
 
         /* @var ConnectionInterface $client */
-        $client = \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+        $client = await(timeout($promise, self::TIMEOUT));
 
         $this->assertInstanceOf('React\Socket\ConnectionInterface', $client);
         $this->assertEquals($server->getAddress(), $client->getRemoteAddress());
@@ -46,17 +49,17 @@ class FunctionalSecureServerTest extends TestCase
         }
 
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        ));
+        ]);
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => false
-        ));
+        ]);
         $promise = $connector->connect($server->getAddress());
 
         /* @var ConnectionInterface $client */
-        $client = \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+        $client = await(timeout($promise, self::TIMEOUT));
 
         $this->assertInstanceOf('React\Socket\Connection', $client);
         $this->assertTrue(isset($client->stream));
@@ -80,18 +83,18 @@ class FunctionalSecureServerTest extends TestCase
     public function testClientUsesTls12WhenCryptoMethodIsExplicitlyConfiguredByClient()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        ));
+        ]);
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => false,
             'crypto_method' => STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT
-        ));
+        ]);
         $promise = $connector->connect($server->getAddress());
 
         /* @var ConnectionInterface $client */
-        $client = \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+        $client = await(timeout($promise, self::TIMEOUT));
 
         $this->assertInstanceOf('React\Socket\Connection', $client);
         $this->assertTrue(isset($client->stream));
@@ -107,18 +110,18 @@ class FunctionalSecureServerTest extends TestCase
     public function testClientUsesTls12WhenCryptoMethodIsExplicitlyConfiguredByServer()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem',
             'crypto_method' => STREAM_CRYPTO_METHOD_TLSv1_2_SERVER
-        ));
+        ]);
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => false
-        ));
+        ]);
         $promise = $connector->connect($server->getAddress());
 
         /* @var ConnectionInterface $client */
-        $client = \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+        $client = await(timeout($promise, self::TIMEOUT));
 
         $this->assertInstanceOf('React\Socket\Connection', $client);
         $this->assertTrue(isset($client->stream));
@@ -134,19 +137,19 @@ class FunctionalSecureServerTest extends TestCase
     public function testClientUsesTls10WhenCryptoMethodIsExplicitlyConfiguredByClient()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        ));
+        ]);
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => false,
             'crypto_method' => STREAM_CRYPTO_METHOD_TLSv1_0_CLIENT
-        ));
+        ]);
         $promise = $connector->connect($server->getAddress());
 
         /* @var ConnectionInterface $client */
         try {
-            $client = \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+            $client = await(timeout($promise, self::TIMEOUT));
         } catch (\RuntimeException $e) {
             // legacy TLS 1.0 would be considered insecure by today's standards, so skip test if connection fails
             // OpenSSL error messages are version/platform specific
@@ -172,23 +175,23 @@ class FunctionalSecureServerTest extends TestCase
     public function testServerEmitsConnectionForClientConnection()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        ));
+        ]);
 
         $peer = new Promise(function ($resolve, $reject) use ($server) {
             $server->on('connection', $resolve);
             $server->on('error', $reject);
         });
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => false
-        ));
+        ]);
         $client = $connector->connect($server->getAddress());
 
         // await both client and server side end of connection
         /* @var ConnectionInterface[] $both */
-        $both = \React\Async\await(\React\Promise\Timer\timeout(\React\Promise\all(array($peer, $client)), self::TIMEOUT));
+        $both = await(timeout(all([$peer, $client]), self::TIMEOUT));
 
         // both ends of the connection are represented by different instances of ConnectionInterface
         $this->assertCount(2, $both);
@@ -209,17 +212,17 @@ class FunctionalSecureServerTest extends TestCase
     public function testClientEmitsDataEventOnceForDataWrittenFromServer()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        ));
+        ]);
 
         $server->on('connection', function (ConnectionInterface $conn) {
             $conn->write('foo');
         });
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => false
-        ));
+        ]);
         $connecting = $connector->connect($server->getAddress());
 
         $promise = new Promise(function ($resolve, $reject) use ($connecting) {
@@ -228,7 +231,7 @@ class FunctionalSecureServerTest extends TestCase
             }, $reject);
         });
 
-        $data = \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+        $data = await(timeout($promise, self::TIMEOUT));
 
         $this->assertEquals('foo', $data);
 
@@ -242,18 +245,18 @@ class FunctionalSecureServerTest extends TestCase
     public function testWritesDataInMultipleChunksToConnection()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        ));
+        ]);
         $server->on('connection', $this->expectCallableOnce());
 
         $server->on('connection', function (ConnectionInterface $conn) {
             $conn->write(str_repeat('*', 400000));
         });
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => false
-        ));
+        ]);
         $connecting = $connector->connect($server->getAddress());
 
         $promise = new Promise(function ($resolve, $reject) use ($connecting) {
@@ -269,7 +272,7 @@ class FunctionalSecureServerTest extends TestCase
             }, $reject);
         });
 
-        $received = \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+        $received = await(timeout($promise, self::TIMEOUT));
 
         $this->assertEquals(400000, $received);
 
@@ -283,18 +286,18 @@ class FunctionalSecureServerTest extends TestCase
     public function testWritesMoreDataInMultipleChunksToConnection()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        ));
+        ]);
         $server->on('connection', $this->expectCallableOnce());
 
         $server->on('connection', function (ConnectionInterface $conn) {
             $conn->write(str_repeat('*', 2000000));
         });
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => false
-        ));
+        ]);
         $connecting = $connector->connect($server->getAddress());
 
         $promise = new Promise(function ($resolve, $reject) use ($connecting) {
@@ -310,7 +313,7 @@ class FunctionalSecureServerTest extends TestCase
             }, $reject);
         });
 
-        $received = \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+        $received = await(timeout($promise, self::TIMEOUT));
 
         $this->assertEquals(2000000, $received);
 
@@ -324,9 +327,9 @@ class FunctionalSecureServerTest extends TestCase
     public function testEmitsDataFromConnection()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        ));
+        ]);
         $server->on('connection', $this->expectCallableOnce());
 
         $promise = new Promise(function ($resolve, $reject) use ($server) {
@@ -335,15 +338,15 @@ class FunctionalSecureServerTest extends TestCase
             });
         });
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => false
-        ));
+        ]);
         $connecting = $connector->connect($server->getAddress());
         $connecting->then(function (ConnectionInterface $connection) {
             $connection->write('foo');
         });
 
-        $data = \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+        $data = await(timeout($promise, self::TIMEOUT));
 
         $this->assertEquals('foo', $data);
 
@@ -357,9 +360,9 @@ class FunctionalSecureServerTest extends TestCase
     public function testEmitsDataInMultipleChunksFromConnection()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        ));
+        ]);
         $server->on('connection', $this->expectCallableOnce());
 
         $promise = new Promise(function ($resolve, $reject) use ($server) {
@@ -375,15 +378,15 @@ class FunctionalSecureServerTest extends TestCase
             });
         });
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => false
-        ));
+        ]);
         $connecting = $connector->connect($server->getAddress());
         $connecting->then(function (ConnectionInterface $connection) {
             $connection->write(str_repeat('*', 400000));
         });
 
-        $received = \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+        $received = await(timeout($promise, self::TIMEOUT));
 
         $this->assertEquals(400000, $received);
 
@@ -397,18 +400,18 @@ class FunctionalSecureServerTest extends TestCase
     public function testPipesDataBackInMultipleChunksFromConnection()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        ));
+        ]);
         $server->on('connection', $this->expectCallableOnce());
 
         $server->on('connection', function (ConnectionInterface $conn) {
             $conn->pipe($conn);
         });
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => false
-        ));
+        ]);
         $connecting = $connector->connect($server->getAddress());
 
         $promise = new Promise(function ($resolve, $reject) use ($connecting) {
@@ -425,7 +428,7 @@ class FunctionalSecureServerTest extends TestCase
             }, $reject);
         });
 
-        $received = \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+        $received = await(timeout($promise, self::TIMEOUT));
 
         $this->assertEquals(400000, $received);
 
@@ -442,19 +445,19 @@ class FunctionalSecureServerTest extends TestCase
     public function testEmitsConnectionForNewTlsv11Connection()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem',
             'crypto_method' => STREAM_CRYPTO_METHOD_TLSv1_1_SERVER
-        ));
+        ]);
         $server->on('connection', $this->expectCallableOnce());
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => false,
             'crypto_method' => STREAM_CRYPTO_METHOD_TLSv1_1_CLIENT
-        ));
+        ]);
         $promise = $connector->connect($server->getAddress());
 
-        \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+        await(timeout($promise, self::TIMEOUT));
 
         $server->close();
         $promise->then(function (ConnectionInterface $connection) {
@@ -468,23 +471,23 @@ class FunctionalSecureServerTest extends TestCase
     public function testEmitsErrorForClientWithTlsVersionMismatch()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem',
             'crypto_method' => STREAM_CRYPTO_METHOD_TLSv1_1_SERVER|STREAM_CRYPTO_METHOD_TLSv1_2_SERVER
-        ));
+        ]);
         $server->on('connection', $this->expectCallableNever());
         $server->on('error', $this->expectCallableOnce());
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => false,
             'crypto_method' => STREAM_CRYPTO_METHOD_TLSv1_0_CLIENT
-        ));
+        ]);
         $promise = $connector->connect($server->getAddress());
 
         $this->setExpectedException('RuntimeException', 'handshake');
 
         try {
-            \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+            await(timeout($promise, self::TIMEOUT));
         } catch (\Exception $e) {
             $server->close();
 
@@ -495,22 +498,22 @@ class FunctionalSecureServerTest extends TestCase
     public function testServerEmitsConnectionForNewConnectionWithEncryptedCertificate()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost_swordfish.pem',
             'passphrase' => 'swordfish'
-        ));
+        ]);
 
         $peer = new Promise(function ($resolve, $reject) use ($server) {
             $server->on('connection', $resolve);
             $server->on('error', $reject);
         });
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => false
-        ));
+        ]);
         $connector->connect($server->getAddress());
 
-        $connection = \React\Async\await(\React\Promise\Timer\timeout($peer, self::TIMEOUT));
+        $connection = await(timeout($peer, self::TIMEOUT));
 
         $this->assertInstanceOf('React\Socket\ConnectionInterface', $connection);
 
@@ -521,19 +524,19 @@ class FunctionalSecureServerTest extends TestCase
     public function testClientRejectsWithErrorForServerWithInvalidCertificate()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => 'invalid.pem'
-        ));
+        ]);
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => false
-        ));
+        ]);
         $promise = $connector->connect($server->getAddress());
 
         $this->setExpectedException('RuntimeException', 'handshake');
 
         try {
-            \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+            await(timeout($promise, self::TIMEOUT));
         } catch (\Exception $e) {
             $server->close();
 
@@ -544,9 +547,9 @@ class FunctionalSecureServerTest extends TestCase
     public function testServerEmitsErrorForClientWithInvalidCertificate()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => 'invalid.pem'
-        ));
+        ]);
 
         $peer = new Promise(function ($resolve, $reject) use ($server) {
             $server->on('connection', function () use ($reject) {
@@ -555,13 +558,13 @@ class FunctionalSecureServerTest extends TestCase
             $server->on('error', $reject);
         });
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => false
-        ));
+        ]);
         $promise = $connector->connect($server->getAddress());
 
         try {
-            \React\Async\await($promise);
+            await($promise);
         } catch (\RuntimeException $e) {
             // ignore client-side exception
         }
@@ -569,7 +572,7 @@ class FunctionalSecureServerTest extends TestCase
         $this->setExpectedException('RuntimeException', 'handshake');
 
         try {
-            \React\Async\await(\React\Promise\Timer\timeout($peer, self::TIMEOUT));
+            await(timeout($peer, self::TIMEOUT));
         } catch (\Exception $e) {
             $server->close();
 
@@ -584,21 +587,21 @@ class FunctionalSecureServerTest extends TestCase
         }
 
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost_swordfish.pem'
-        ));
+        ]);
         $server->on('connection', $this->expectCallableNever());
         $server->on('error', $this->expectCallableOnce());
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => false
-        ));
+        ]);
         $promise = $connector->connect($server->getAddress());
 
         $this->setExpectedException('RuntimeException', 'handshake');
 
         try {
-            \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+            await(timeout($promise, self::TIMEOUT));
         } catch (\Exception $e) {
             $server->close();
 
@@ -613,22 +616,22 @@ class FunctionalSecureServerTest extends TestCase
         }
 
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost_swordfish.pem',
             'passphrase' => 'nope'
-        ));
+        ]);
         $server->on('connection', $this->expectCallableNever());
         $server->on('error', $this->expectCallableOnce());
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => false
-        ));
+        ]);
         $promise = $connector->connect($server->getAddress());
 
         $this->setExpectedException('RuntimeException', 'handshake');
 
         try {
-            \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+            await(timeout($promise, self::TIMEOUT));
         } catch (\Exception $e) {
             $server->close();
 
@@ -639,19 +642,19 @@ class FunctionalSecureServerTest extends TestCase
     public function testEmitsErrorForConnectionWithPeerVerification()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        ));
+        ]);
         $server->on('connection', $this->expectCallableNever());
         $errorEvent = $this->createPromiseForServerError($server);
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => true
-        ));
+        ]);
         $promise = $connector->connect($server->getAddress());
         $promise->then(null, $this->expectCallableOnce());
 
-        \React\Async\await(\React\Promise\Timer\timeout($errorEvent, self::TIMEOUT));
+        await(timeout($errorEvent, self::TIMEOUT));
 
         $server->close();
     }
@@ -663,20 +666,20 @@ class FunctionalSecureServerTest extends TestCase
         }
 
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        ));
+        ]);
         $server->on('connection', $this->expectCallableNever());
         $errorEvent = $this->createPromiseForServerError($server);
 
-        $connector = new SecureConnector(new TcpConnector(), null, array(
+        $connector = new SecureConnector(new TcpConnector(), null, [
             'verify_peer' => false
-        ));
+        ]);
         $promise = $connector->connect($server->getAddress());
         $promise->cancel();
         $promise->then(null, $this->expectCallableOnce());
 
-        \React\Async\await(\React\Promise\Timer\timeout($errorEvent, self::TIMEOUT));
+        await(timeout($errorEvent, self::TIMEOUT));
 
         $server->close();
     }
@@ -684,9 +687,9 @@ class FunctionalSecureServerTest extends TestCase
     public function testEmitsErrorIfConnectionIsClosedBeforeHandshake()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        ));
+        ]);
         $server->on('connection', $this->expectCallableNever());
         $errorEvent = $this->createPromiseForServerError($server);
 
@@ -697,7 +700,7 @@ class FunctionalSecureServerTest extends TestCase
             $stream->close();
         });
 
-        $error = \React\Async\await(\React\Promise\Timer\timeout($errorEvent, self::TIMEOUT));
+        $error = await(timeout($errorEvent, self::TIMEOUT));
 
         // Connection from tcp://127.0.0.1:39528 failed during TLS handshake: Connection lost during TLS handshake (ECONNRESET)
         $this->assertInstanceOf('RuntimeException', $error);
@@ -712,9 +715,9 @@ class FunctionalSecureServerTest extends TestCase
     public function testEmitsErrorIfConnectionIsClosedWithIncompleteHandshake()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        ));
+        ]);
         $server->on('connection', $this->expectCallableNever());
         $errorEvent = $this->createPromiseForServerError($server);
 
@@ -725,7 +728,7 @@ class FunctionalSecureServerTest extends TestCase
             $stream->end("\x1e");
         });
 
-        $error = \React\Async\await(\React\Promise\Timer\timeout($errorEvent, self::TIMEOUT));
+        $error = await(timeout($errorEvent, self::TIMEOUT));
 
         // Connection from tcp://127.0.0.1:39528 failed during TLS handshake: Connection lost during TLS handshake (ECONNRESET)
         $this->assertInstanceOf('RuntimeException', $error);
@@ -740,16 +743,16 @@ class FunctionalSecureServerTest extends TestCase
     public function testEmitsNothingIfPlaintextConnectionIsIdle()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        ));
+        ]);
         $server->on('connection', $this->expectCallableNever());
         $server->on('error', $this->expectCallableNever());
 
         $connector = new TcpConnector();
         $promise = $connector->connect(str_replace('tls://', '', $server->getAddress()));
 
-        $connection = \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+        $connection = await(timeout($promise, self::TIMEOUT));
         $this->assertInstanceOf('React\Socket\ConnectionInterface', $connection);
 
         $server->close();
@@ -761,9 +764,9 @@ class FunctionalSecureServerTest extends TestCase
     public function testEmitsErrorIfConnectionIsHttpInsteadOfSecureHandshake()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        ));
+        ]);
         $server->on('connection', $this->expectCallableNever());
         $errorEvent = $this->createPromiseForServerError($server);
 
@@ -774,7 +777,7 @@ class FunctionalSecureServerTest extends TestCase
             $stream->write("GET / HTTP/1.0\r\n\r\n");
         });
 
-        $error = \React\Async\await(\React\Promise\Timer\timeout($errorEvent, self::TIMEOUT));
+        $error = await(timeout($errorEvent, self::TIMEOUT));
 
         $this->assertInstanceOf('RuntimeException', $error);
 
@@ -790,9 +793,9 @@ class FunctionalSecureServerTest extends TestCase
     public function testEmitsErrorIfConnectionIsUnknownProtocolInsteadOfSecureHandshake()
     {
         $server = new TcpServer(0);
-        $server = new SecureServer($server, null, array(
+        $server = new SecureServer($server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        ));
+        ]);
         $server->on('connection', $this->expectCallableNever());
         $errorEvent = $this->createPromiseForServerError($server);
 
@@ -803,7 +806,7 @@ class FunctionalSecureServerTest extends TestCase
             $stream->write("Hello world!\n");
         });
 
-        $error = \React\Async\await(\React\Promise\Timer\timeout($errorEvent, self::TIMEOUT));
+        $error = await(timeout($errorEvent, self::TIMEOUT));
 
         $this->assertInstanceOf('RuntimeException', $error);
 

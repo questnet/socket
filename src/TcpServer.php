@@ -5,8 +5,6 @@ namespace React\Socket;
 use Evenement\EventEmitter;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
-use InvalidArgumentException;
-use RuntimeException;
 
 /**
  * The `TcpServer` class implements the `ServerInterface` and
@@ -109,11 +107,11 @@ final class TcpServer extends EventEmitter implements ServerInterface
      * for the underlying stream socket resource like this:
      *
      * ```php
-     * $server = new React\Socket\TcpServer('[::1]:8080', null, array(
+     * $server = new React\Socket\TcpServer('[::1]:8080', null, [
      *     'backlog' => 200,
      *     'so_reuseport' => true,
      *     'ipv6_v6only' => true
-     * ));
+     * ]);
      * ```
      *
      * Note that available [socket context options](https://www.php.net/manual/en/context.socket.php),
@@ -125,12 +123,12 @@ final class TcpServer extends EventEmitter implements ServerInterface
      * @param string|int     $uri
      * @param ?LoopInterface $loop
      * @param array          $context
-     * @throws InvalidArgumentException if the listening address is invalid
-     * @throws RuntimeException if listening on this address fails (already in use etc.)
+     * @throws \InvalidArgumentException if the listening address is invalid
+     * @throws \RuntimeException if listening on this address fails (already in use etc.)
      */
-    public function __construct($uri, LoopInterface $loop = null, array $context = array())
+    public function __construct($uri, LoopInterface $loop = null, array $context = [])
     {
-        $this->loop = $loop ?: Loop::get();
+        $this->loop = $loop ?? Loop::get();
 
         // a single port has been given => assume localhost
         if ((string)(int)$uri === (string)$uri) {
@@ -172,7 +170,7 @@ final class TcpServer extends EventEmitter implements ServerInterface
             $errno,
             $errstr,
             \STREAM_SERVER_BIND | \STREAM_SERVER_LISTEN,
-            \stream_context_create(array('socket' => $context + array('backlog' => 511)))
+            \stream_context_create(['socket' => $context + ['backlog' => 511]])
         );
         if (false === $this->master) {
             if ($errno === 0) {
@@ -224,15 +222,14 @@ final class TcpServer extends EventEmitter implements ServerInterface
             return;
         }
 
-        $that = $this;
-        $this->loop->addReadStream($this->master, function ($master) use ($that) {
+        $this->loop->addReadStream($this->master, function ($master) {
             try {
                 $newSocket = SocketServer::accept($master);
             } catch (\RuntimeException $e) {
-                $that->emit('error', array($e));
+                $this->emit('error', [$e]);
                 return;
             }
-            $that->handleConnection($newSocket);
+            $this->handleConnection($newSocket);
         });
         $this->listening = true;
     }
@@ -251,8 +248,8 @@ final class TcpServer extends EventEmitter implements ServerInterface
     /** @internal */
     public function handleConnection($socket)
     {
-        $this->emit('connection', array(
+        $this->emit('connection', [
             new Connection($socket, $this->loop)
-        ));
+        ]);
     }
 }

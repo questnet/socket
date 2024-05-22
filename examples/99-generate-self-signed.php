@@ -7,15 +7,15 @@
 
 // certificate details (Distinguished Name)
 // (OpenSSL applies defaults to missing fields)
-$dn = array(
-    "commonName" => isset($argv[1]) ? $argv[1] : "localhost",
+$dn = [
+    "commonName" => $argv[1] ?? "localhost",
 //     "countryName" => "AU",
 //     "stateOrProvinceName" => "Some-State",
 //     "localityName" => "London",
 //     "organizationName" => "Internet Widgits Pty Ltd",
 //     "organizationalUnitName" => "R&D",
 //     "emailAddress" => "admin@example.com"
-);
+];
 
 // create certificate which is valid for ~10 years
 $privkey = openssl_pkey_new();
@@ -26,6 +26,6 @@ $cert = openssl_csr_sign($cert, null, $privkey, 3650);
 openssl_x509_export($cert, $out);
 echo $out;
 
-$passphrase = isset($argv[2]) ? $argv[2] : null;
+$passphrase = $argv[2] ?? null;
 openssl_pkey_export($privkey, $out, $passphrase);
 echo $out;

@@ -6,6 +6,8 @@ use React\Promise\Promise;
 use React\Socket\HappyEyeBallsConnectionBuilder;
 use React\Dns\Model\Message;
 use React\Promise\Deferred;
+use function React\Promise\reject;
+use function React\Promise\resolve;
 
 class HappyEyeBallsConnectionBuilderTest extends TestCase
 {
@@ -19,8 +21,8 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
 
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('reactphp.org', Message::TYPE_AAAA),
-            array('reactphp.org', Message::TYPE_A)
+            ['reactphp.org', Message::TYPE_AAAA],
+            ['reactphp.org', Message::TYPE_A]
         )->willReturn(new Promise(function () { }));
 
         $uri = 'tcp://reactphp.org:80';
@@ -42,8 +44,8 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
 
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('reactphp.org', Message::TYPE_AAAA),
-            array('reactphp.org', Message::TYPE_A)
+            ['reactphp.org', Message::TYPE_AAAA],
+            ['reactphp.org', Message::TYPE_A]
         )->willReturn(new Promise(function () {
             throw new \RuntimeException('DNS lookup error');
         }));
@@ -80,11 +82,11 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
         $deferred = new Deferred();
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('reactphp.org', Message::TYPE_AAAA),
-            array('reactphp.org', Message::TYPE_A)
+            ['reactphp.org', Message::TYPE_AAAA],
+            ['reactphp.org', Message::TYPE_A]
         )->willReturnOnConsecutiveCalls(
             $deferred->promise(),
-            \React\Promise\reject(new \RuntimeException('DNS4 error'))
+            reject(new \RuntimeException('DNS4 error'))
         );
 
         $uri = 'tcp://reactphp.org:80';
@@ -120,11 +122,11 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
 
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('reactphp.org', Message::TYPE_AAAA),
-            array('reactphp.org', Message::TYPE_A)
+            ['reactphp.org', Message::TYPE_AAAA],
+            ['reactphp.org', Message::TYPE_A]
         )->willReturnOnConsecutiveCalls(
             new Promise(function () { }),
-            \React\Promise\resolve(array('127.0.0.1'))
+            resolve(['127.0.0.1'])
         );
 
         $uri = 'tcp://reactphp.org:80';
@@ -147,10 +149,10 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
 
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('reactphp.org', Message::TYPE_AAAA),
-            array('reactphp.org', Message::TYPE_A)
+            ['reactphp.org', Message::TYPE_AAAA],
+            ['reactphp.org', Message::TYPE_A]
         )->willReturnOnConsecutiveCalls(
-            \React\Promise\resolve(array('::1')),
+            resolve(['::1']),
             new Promise(function () { })
         );
 
@@ -178,10 +180,10 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
 
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('reactphp.org', Message::TYPE_AAAA),
-            array('reactphp.org', Message::TYPE_A)
+            ['reactphp.org', Message::TYPE_AAAA],
+            ['reactphp.org', Message::TYPE_A]
         )->willReturnOnConsecutiveCalls(
-            \React\Promise\resolve(array('::1', '::2')),
+            resolve(['::1', '::2']),
             new Promise(function () { })
         );
 
@@ -212,10 +214,10 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
 
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('reactphp.org', Message::TYPE_AAAA),
-            array('reactphp.org', Message::TYPE_A)
+            ['reactphp.org', Message::TYPE_AAAA],
+            ['reactphp.org', Message::TYPE_A]
         )->willReturnOnConsecutiveCalls(
-            \React\Promise\resolve(array('::1')),
+            resolve(['::1']),
             new Promise(function () { })
         );
 
@@ -244,10 +246,10 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
         $deferred = new Deferred();
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('reactphp.org', Message::TYPE_AAAA),
-            array('reactphp.org', Message::TYPE_A)
+            ['reactphp.org', Message::TYPE_AAAA],
+            ['reactphp.org', Message::TYPE_A]
         )->willReturnOnConsecutiveCalls(
-            \React\Promise\resolve(array('::1')),
+            resolve(['::1']),
             $deferred->promise()
         );
 
@@ -271,8 +273,8 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
         $deferred = new Deferred();
         $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
         $connector->expects($this->exactly(2))->method('connect')->withConsecutive(
-            array('tcp://[::1]:80?hostname=reactphp.org'),
-            array('tcp://127.0.0.1:80?hostname=reactphp.org')
+            ['tcp://[::1]:80?hostname=reactphp.org'],
+            ['tcp://127.0.0.1:80?hostname=reactphp.org']
         )->willReturnOnConsecutiveCalls(
             $deferred->promise(),
             new Promise(function () { })
@@ -280,11 +282,11 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
 
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('reactphp.org', Message::TYPE_AAAA),
-            array('reactphp.org', Message::TYPE_A)
+            ['reactphp.org', Message::TYPE_AAAA],
+            ['reactphp.org', Message::TYPE_A]
         )->willReturnOnConsecutiveCalls(
-            \React\Promise\resolve(array('::1')),
-            \React\Promise\resolve(array('127.0.0.1'))
+            resolve(['::1']),
+            resolve(['127.0.0.1'])
         );
 
         $uri = 'tcp://reactphp.org:80';
@@ -308,10 +310,10 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
         $deferred = new Deferred();
         $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
         $connector->expects($this->exactly(4))->method('connect')->withConsecutive(
-            array('tcp://[::1]:80?hostname=reactphp.org'),
-            array('tcp://127.0.0.1:80?hostname=reactphp.org'),
-            array('tcp://[::1]:80?hostname=reactphp.org'),
-            array('tcp://127.0.0.1:80?hostname=reactphp.org')
+            ['tcp://[::1]:80?hostname=reactphp.org'],
+            ['tcp://127.0.0.1:80?hostname=reactphp.org'],
+            ['tcp://[::1]:80?hostname=reactphp.org'],
+            ['tcp://127.0.0.1:80?hostname=reactphp.org']
         )->willReturnOnConsecutiveCalls(
             $deferred->promise(),
             $deferred->promise(),
@@ -321,11 +323,11 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
 
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('reactphp.org', Message::TYPE_AAAA),
-            array('reactphp.org', Message::TYPE_A)
+            ['reactphp.org', Message::TYPE_AAAA],
+            ['reactphp.org', Message::TYPE_A]
         )->willReturnOnConsecutiveCalls(
-            \React\Promise\resolve(array('::1', '::1')),
-            \React\Promise\resolve(array('127.0.0.1', '127.0.0.1'))
+            resolve(['::1', '::1']),
+            resolve(['127.0.0.1', '127.0.0.1'])
         );
 
         $uri = 'tcp://reactphp.org:80';
@@ -348,20 +350,20 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
 
         $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
         $connector->expects($this->exactly(2))->method('connect')->withConsecutive(
-            array('tcp://[::1]:80?hostname=reactphp.org'),
-            array('tcp://[::1]:80?hostname=reactphp.org')
+            ['tcp://[::1]:80?hostname=reactphp.org'],
+            ['tcp://[::1]:80?hostname=reactphp.org']
         )->willReturnOnConsecutiveCalls(
-            \React\Promise\reject(new \RuntimeException()),
+            reject(new \RuntimeException()),
             new Promise(function () { })
         );
 
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('reactphp.org', Message::TYPE_AAAA),
-            array('reactphp.org', Message::TYPE_A)
+            ['reactphp.org', Message::TYPE_AAAA],
+            ['reactphp.org', Message::TYPE_A]
         )->willReturnOnConsecutiveCalls(
-            \React\Promise\resolve(array('::1', '::1')),
-            \React\Promise\reject(new \RuntimeException())
+            resolve(['::1', '::1']),
+            reject(new \RuntimeException())
         );
 
         $uri = 'tcp://reactphp.org:80';
@@ -389,10 +391,10 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
         $deferred = new Deferred();
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('reactphp.org', Message::TYPE_AAAA),
-            array('reactphp.org', Message::TYPE_A)
+            ['reactphp.org', Message::TYPE_AAAA],
+            ['reactphp.org', Message::TYPE_A]
         )->willReturnOnConsecutiveCalls(
-            \React\Promise\resolve(array('::1', '::2')),
+            resolve(['::1', '::2']),
             $deferred->promise()
         );
 
@@ -415,14 +417,8 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
         $timerAttempt = $this->getMockBuilder('React\EventLoop\TimerInterface')->getMock();
         $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
         $loop->expects($this->exactly(2))->method('addTimer')->withConsecutive(
-            array(
-                0.05,
-                $this->anything()
-            ),
-            array(
-                0.1,
-                $this->anything()
-            )
+            [0.05, $this->anything()],
+            [0.1, $this->anything()]
         )->willReturnOnConsecutiveCalls($timerDelay, $timerAttempt);
         $loop->expects($this->once())->method('cancelTimer')->with($timerDelay);
 
@@ -432,11 +428,11 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
         $deferred = new Deferred();
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('reactphp.org', Message::TYPE_AAAA),
-            array('reactphp.org', Message::TYPE_A)
+            ['reactphp.org', Message::TYPE_AAAA],
+            ['reactphp.org', Message::TYPE_A]
         )->willReturnOnConsecutiveCalls(
             $deferred->promise(),
-            \React\Promise\resolve(array('127.0.0.1'))
+            resolve(['127.0.0.1'])
         );
 
         $uri = 'tcp://reactphp.org:80';
@@ -446,7 +442,7 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
         $builder = new HappyEyeBallsConnectionBuilder($loop, $connector, $resolver, $uri, $host, $parts);
 
         $builder->connect();
-        $deferred->resolve(array('::1'));
+        $deferred->resolve(['::1']);
     }
 
     public function testConnectWillRejectWhenOnlyTcp6ConnectionRejectsAndCancelNextAttemptTimerImmediately()
@@ -462,11 +458,11 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
 
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('reactphp.org', Message::TYPE_AAAA),
-            array('reactphp.org', Message::TYPE_A)
+            ['reactphp.org', Message::TYPE_AAAA],
+            ['reactphp.org', Message::TYPE_A]
         )->willReturnOnConsecutiveCalls(
-            \React\Promise\resolve(array('::1')),
-            \React\Promise\reject(new \RuntimeException('DNS failed'))
+            resolve(['::1']),
+            reject(new \RuntimeException('DNS failed'))
         );
 
         $uri = 'tcp://reactphp.org:80';
@@ -505,11 +501,11 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
 
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('reactphp.org', Message::TYPE_AAAA),
-            array('reactphp.org', Message::TYPE_A)
+            ['reactphp.org', Message::TYPE_AAAA],
+            ['reactphp.org', Message::TYPE_A]
         )->willReturnOnConsecutiveCalls(
-            \React\Promise\reject(new \RuntimeException('DNS failed')),
-            \React\Promise\resolve(array('127.0.0.1'))
+            reject(new \RuntimeException('DNS failed')),
+            resolve(['127.0.0.1'])
         );
 
         $uri = 'tcp://reactphp.org:80';
@@ -550,11 +546,11 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
 
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('reactphp.org', Message::TYPE_AAAA),
-            array('reactphp.org', Message::TYPE_A)
+            ['reactphp.org', Message::TYPE_AAAA],
+            ['reactphp.org', Message::TYPE_A]
         )->willReturnOnConsecutiveCalls(
-            \React\Promise\resolve(array('::1')),
-            \React\Promise\resolve(array('127.0.0.1'))
+            resolve(['::1']),
+            resolve(['127.0.0.1'])
         );
 
         $uri = 'tcp://reactphp.org:80';
@@ -593,7 +589,7 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
         $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
         $connector->expects($this->exactly(2))->method('connect')->willReturnOnConsecutiveCalls(
             $deferred->promise(),
-            \React\Promise\reject(new \RuntimeException(
+            reject(new \RuntimeException(
                 'Connection to tcp://127.0.0.1:80?hostname=localhost failed: Connection refused (ECONNREFUSED)',
                 defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111
             ))
@@ -601,11 +597,11 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
 
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('localhost', Message::TYPE_AAAA),
-            array('localhost', Message::TYPE_A)
+            ['localhost', Message::TYPE_AAAA],
+            ['localhost', Message::TYPE_A]
         )->willReturnOnConsecutiveCalls(
-            \React\Promise\resolve(array('::1')),
-            \React\Promise\resolve(array('127.0.0.1'))
+            resolve(['::1']),
+            resolve(['127.0.0.1'])
         );
 
         $uri = 'tcp://localhost:80';
@@ -644,8 +640,8 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
         $cancelled = 0;
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('reactphp.org', Message::TYPE_AAAA),
-            array('reactphp.org', Message::TYPE_A)
+            ['reactphp.org', Message::TYPE_AAAA],
+            ['reactphp.org', Message::TYPE_A]
         )->willReturnOnConsecutiveCalls(
             new Promise(function () { }, function () use (&$cancelled) {
                 ++$cancelled;
@@ -692,13 +688,13 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
 
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('reactphp.org', Message::TYPE_AAAA),
-            array('reactphp.org', Message::TYPE_A)
+            ['reactphp.org', Message::TYPE_AAAA],
+            ['reactphp.org', Message::TYPE_A]
         )->willReturnOnConsecutiveCalls(
             new Promise(function () { }, function () {
                 throw new \RuntimeException('DNS cancelled');
             }),
-            \React\Promise\resolve(array('127.0.0.1'))
+            resolve(['127.0.0.1'])
         );
 
         $uri = 'tcp://reactphp.org:80';
@@ -738,10 +734,10 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
 
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->exactly(2))->method('resolveAll')->withConsecutive(
-            array('reactphp.org', Message::TYPE_AAAA),
-            array('reactphp.org', Message::TYPE_A)
+            ['reactphp.org', Message::TYPE_AAAA],
+            ['reactphp.org', Message::TYPE_A]
         )->willReturnOnConsecutiveCalls(
-            \React\Promise\resolve(array('::1')),
+            resolve(['::1']),
             new Promise(function () { }, $this->expectCallableOnce())
         );
 
@@ -775,7 +771,7 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
         $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
 
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
-        $resolver->expects($this->once())->method('resolveAll')->with('reactphp.org', Message::TYPE_A)->willReturn(\React\Promise\reject(new \RuntimeException()));
+        $resolver->expects($this->once())->method('resolveAll')->with('reactphp.org', Message::TYPE_A)->willReturn(reject(new \RuntimeException()));
 
         $uri = 'tcp://reactphp.org:80';
         $host = 'reactphp.org';
@@ -786,7 +782,7 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
         $promise = $builder->resolve(Message::TYPE_A, $this->expectCallableNever());
 
         $this->assertInstanceof('React\Promise\PromiseInterface', $promise);
-        $promise->then($this->expectCallableOnceWith(array()), $this->expectCallableNever());
+        $promise->then($this->expectCallableOnceWith([]), $this->expectCallableNever());
     }
 
     public function testAttemptConnectionWillConnectViaConnectorToGivenIpWithPortAndHostnameFromUriParts()
@@ -832,7 +828,7 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
         $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
 
         $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
-        $connector->expects($this->once())->method('connect')->with('tcp://[::1]:80/path?test=yes&hostname=reactphp.org#start')->willReturn(\React\Promise\reject(new \RuntimeException()));
+        $connector->expects($this->once())->method('connect')->with('tcp://[::1]:80/path?test=yes&hostname=reactphp.org#start')->willReturn(reject(new \RuntimeException()));
 
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->never())->method('resolveAll');
@@ -845,7 +841,7 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
 
         $ref = new \ReflectionProperty($builder, 'connectQueue');
         $ref->setAccessible(true);
-        $ref->setValue($builder, array('::1'));
+        $ref->setValue($builder, ['::1']);
 
         $builder->check($this->expectCallableNever(), function () { });
 
@@ -853,7 +849,7 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
         $ref->setAccessible(true);
         $promises = $ref->getValue($builder);
 
-        $this->assertEquals(array(), $promises);
+        $this->assertEquals([], $promises);
     }
 
     public function testCleanUpCancelsAllPendingConnectionAttempts()
@@ -877,7 +873,7 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
 
         $ref = new \ReflectionProperty($builder, 'connectQueue');
         $ref->setAccessible(true);
-        $ref->setValue($builder, array('::1', '::1'));
+        $ref->setValue($builder, ['::1', '::1']);
 
         $builder->check($this->expectCallableNever(), function () { });
         $builder->check($this->expectCallableNever(), function () { });
@@ -905,7 +901,7 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
 
         $ref = new \ReflectionProperty($builder, 'connectQueue');
         $ref->setAccessible(true);
-        $ref->setValue($builder, array('::1', '::1'));
+        $ref->setValue($builder, ['::1', '::1']);
 
         $builder->check($this->expectCallableNever(), function () { });
 
@@ -924,18 +920,18 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
 
         for ($i = 0; $i < 100; ++$i) {
             $builder = new HappyEyeBallsConnectionBuilder($loop, $connector, $resolver, $uri, $host, $parts);
-            $builder->mixIpsIntoConnectQueue(array('::1', '::2'));
+            $builder->mixIpsIntoConnectQueue(['::1', '::2']);
 
             $ref = new \ReflectionProperty($builder, 'connectQueue');
             $ref->setAccessible(true);
             $value = $ref->getValue($builder);
 
-            if ($value === array('::1', '::2')) {
+            if ($value === ['::1', '::2']) {
                 break;
             }
         }
 
-        $this->assertEquals(array('::1', '::2'), $value);
+        $this->assertEquals(['::1', '::2'], $value);
     }
 
     public function testMixIpsIntoConnectQueueSometimesAssignsInReverseOrder()
@@ -950,17 +946,17 @@ class HappyEyeBallsConnectionBuilderTest extends TestCase
 
         for ($i = 0; $i < 100; ++$i) {
             $builder = new HappyEyeBallsConnectionBuilder($loop, $connector, $resolver, $uri, $host, $parts);
-            $builder->mixIpsIntoConnectQueue(array('::1', '::2'));
+            $builder->mixIpsIntoConnectQueue(['::1', '::2']);
 
             $ref = new \ReflectionProperty($builder, 'connectQueue');
             $ref->setAccessible(true);
             $value = $ref->getValue($builder);
 
-            if ($value === array('::2', '::1')) {
+            if ($value === ['::2', '::1']) {
                 break;
             }
         }
 
-        $this->assertEquals(array('::2', '::1'), $value);
+        $this->assertEquals(['::2', '::1'], $value);
     }
 }

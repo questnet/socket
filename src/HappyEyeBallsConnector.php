@@ -5,7 +5,7 @@ namespace React\Socket;
 use React\Dns\Resolver\ResolverInterface;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
-use React\Promise;
+use function React\Promise\reject;
 
 final class HappyEyeBallsConnector implements ConnectorInterface
 {
@@ -13,18 +13,9 @@ final class HappyEyeBallsConnector implements ConnectorInterface
     private $connector;
     private $resolver;
 
-    public function __construct(LoopInterface $loop = null, ConnectorInterface $connector = null, ResolverInterface $resolver = null)
+    public function __construct(?LoopInterface $loop, ConnectorInterface $connector, ResolverInterface $resolver)
     {
-        // $connector and $resolver arguments are actually required, marked
-        // optional for technical reasons only. Nullable $loop without default
-        // requires PHP 7.1, null default is also supported in legacy PHP
-        // versions, but required parameters are not allowed after arguments
-        // with null default. Mark all parameters optional and check accordingly.
-        if ($connector === null || $resolver === null) {
-            throw new \InvalidArgumentException('Missing required $connector or $resolver argument');
-        }
-
-        $this->loop = $loop ?: Loop::get();
+        $this->loop = $loop ?? Loop::get();
         $this->connector = $connector;
         $this->resolver = $resolver;
     }
@@ -43,7 +34,7 @@ final class HappyEyeBallsConnector implements ConnectorInterface
         }
 
         if (!$parts || !isset($parts['host'])) {
-            return Promise\reject(new \InvalidArgumentException(
+            return reject(new \InvalidArgumentException(
                 'Given URI "' . $original . '" is invalid (EINVAL)',
                 \defined('SOCKET_EINVAL') ? \SOCKET_EINVAL : (\defined('PCNTL_EINVAL') ? \PCNTL_EINVAL : 22)
             ));

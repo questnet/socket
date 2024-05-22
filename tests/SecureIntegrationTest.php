@@ -10,6 +10,9 @@ use React\Socket\SecureConnector;
 use React\Socket\SecureServer;
 use React\Socket\TcpConnector;
 use React\Socket\TcpServer;
+use function React\Async\await;
+use function React\Promise\all;
+use function React\Promise\Timer\timeout;
 
 class SecureIntegrationTest extends TestCase
 {
@@ -25,11 +28,11 @@ class SecureIntegrationTest extends TestCase
     public function setUpConnector()
     {
         $this->server = new TcpServer(0);
-        $this->server = new SecureServer($this->server, null, array(
+        $this->server = new SecureServer($this->server, null, [
             'local_cert' => __DIR__ . '/../examples/localhost.pem'
-        ));
+        ]);
         $this->address = $this->server->getAddress();
-        $this->connector = new SecureConnector(new TcpConnector(), null, array('verify_peer' => false));
+        $this->connector = new SecureConnector(new TcpConnector(), null, ['verify_peer' => false]);
     }
 
     /**
@@ -45,7 +48,7 @@ class SecureIntegrationTest extends TestCase
 
     public function testConnectToServer()
     {
-        $client = \React\Async\await(\React\Promise\Timer\timeout($this->connector->connect($this->address), self::TIMEOUT));
+        $client = await(timeout($this->connector->connect($this->address), self::TIMEOUT));
         /* @var $client ConnectionInterface */
 
         $client->close();
@@ -60,7 +63,7 @@ class SecureIntegrationTest extends TestCase
 
         $promiseClient = $this->connector->connect($this->address);
 
-        list($_, $client) = \React\Async\await(\React\Promise\Timer\timeout(\React\Promise\all(array($promiseServer, $promiseClient)), self::TIMEOUT));
+        [$_, $client] = await(timeout(all([$promiseServer, $promiseClient]), self::TIMEOUT));
         /* @var $client ConnectionInterface */
 
         $client->close();
@@ -76,13 +79,13 @@ class SecureIntegrationTest extends TestCase
             });
         });
 
-        $client = \React\Async\await(\React\Promise\Timer\timeout($this->connector->connect($this->address), self::TIMEOUT));
+        $client = await(timeout($this->connector->connect($this->address), self::TIMEOUT));
         /* @var $client ConnectionInterface */
 
         $client->write('hello');
 
         // await server to report one "data" event
-        $data = \React\Async\await(\React\Promise\Timer\timeout($received->promise(), self::TIMEOUT));
+        $data = await(timeout($received->promise(), self::TIMEOUT));
 
         $client->close();
 
@@ -95,10 +98,10 @@ class SecureIntegrationTest extends TestCase
         // we explicitly use older TLS version instead.
         // Continue if TLS 1.3 is not supported anyway.
         if ($this->supportsTls13()) {
-            $this->connector = new SecureConnector(new TcpConnector(), null, array(
+            $this->connector = new SecureConnector(new TcpConnector(), null, [
                 'verify_peer' => false,
                 'crypto_method' => STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT
-            ));
+            ]);
         }
 
         $disconnected = new Deferred();
@@ -112,14 +115,14 @@ class SecureIntegrationTest extends TestCase
             });
         });
 
-        $client = \React\Async\await(\React\Promise\Timer\timeout($this->connector->connect($this->address), self::TIMEOUT));
+        $client = await(timeout($this->connector->connect($this->address), self::TIMEOUT));
         /* @var $client ConnectionInterface */
 
         $data = str_repeat('a', 200000);
         $client->end($data);
 
         // await server to report connection "close" event
-        $received = \React\Async\await(\React\Promise\Timer\timeout($disconnected->promise(), self::TIMEOUT));
+        $received = await(timeout($disconnected->promise(), self::TIMEOUT));
 
         $this->assertEquals(strlen($data), strlen($received));
         $this->assertEquals($data, $received);
@@ -147,7 +150,7 @@ class SecureIntegrationTest extends TestCase
             $connection->write($data);
         });
 
-        $received = \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+        $received = await(timeout($promise, self::TIMEOUT));
 
         $this->assertEquals(strlen($data), strlen($received));
         $this->assertEquals($data, $received);
@@ -163,12 +166,12 @@ class SecureIntegrationTest extends TestCase
             $peer->write('hello');
         });
 
-        $client = \React\Async\await(\React\Promise\Timer\timeout($this->connector->connect($this->address), self::TIMEOUT));
+        $client = await(timeout($this->connector->connect($this->address), self::TIMEOUT));
         /* @var $client ConnectionInterface */
 
         // await client to report one "data" event
         $receive = $this->createPromiseForEvent($client, 'data', $this->expectCallableOnceWith('hello'));
-        \React\Async\await(\React\Promise\Timer\timeout($receive, self::TIMEOUT));
+        await(timeout($receive, self::TIMEOUT));
 
         $client->close();
     }
@@ -180,7 +183,7 @@ class SecureIntegrationTest extends TestCase
             $peer->end($data);
         });
 
-        $client = \React\Async\await(\React\Promise\Timer\timeout($this->connector->connect($this->address), self::TIMEOUT));
+        $client = await(timeout($this->connector->connect($this->address), self::TIMEOUT));
         /* @var $client ConnectionInterface */
 
         // await data from client until it closes
@@ -211,7 +214,7 @@ class SecureIntegrationTest extends TestCase
             }, $reject);
         });
 
-        $received = \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+        $received = await(timeout($promise, self::TIMEOUT));
 
         $this->assertEquals(strlen($data), $received);
 

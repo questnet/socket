@@ -3,9 +3,12 @@
 namespace React\Tests\Socket;
 
 use React\EventLoop\Loop;
+use React\Promise\Promise;
 use React\Socket\TcpServer;
 use React\Stream\DuplexResourceStream;
-use React\Promise\Promise;
+use function React\Async\await;
+use function React\Promise\Timer\sleep;
+use function React\Promise\Timer\timeout;
 
 class TcpServerTest extends TestCase
 {
@@ -47,12 +50,11 @@ class TcpServerTest extends TestCase
         $client = stream_socket_client('tcp://localhost:'.$this->port);
         assert($client !== false);
 
-        $server = $this->server;
-        $promise = new Promise(function ($resolve) use ($server) {
-            $server->on('connection', $resolve);
+        $promise = new Promise(function ($resolve) {
+            $this->server->on('connection', $resolve);
         });
 
-        $connection = \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+        $connection = await(timeout($promise, self::TIMEOUT));
 
         $this->assertInstanceOf('React\Socket\ConnectionInterface', $connection);
     }
@@ -367,6 +369,6 @@ class TcpServerTest extends TestCase
             $this->markTestSkipped('Not supported on Windows');
         }
 
-        \React\Async\await(\React\Promise\Timer\sleep(0.0));
+        await(sleep(0.0));
     }
 }

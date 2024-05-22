@@ -4,8 +4,6 @@ namespace React\Socket;
 
 use React\EventLoop\LoopInterface;
 use React\Promise\Deferred;
-use RuntimeException;
-use UnexpectedValueException;
 
 /**
  * This class is considered internal and its API should not be relied upon
@@ -73,15 +71,11 @@ class StreamEncryption
         $socket = $stream->stream;
 
         // get crypto method from context options or use global setting from constructor
-        $method = $this->method;
         $context = \stream_context_get_options($socket);
-        if (isset($context['ssl']['crypto_method'])) {
-            $method = $context['ssl']['crypto_method'];
-        }
+        $method = $context['ssl']['crypto_method'] ?? $this->method;
 
-        $that = $this;
-        $toggleCrypto = function () use ($socket, $deferred, $toggle, $method, $that) {
-            $that->toggleCrypto($socket, $deferred, $toggle, $method);
+        $toggleCrypto = function () use ($socket, $deferred, $toggle, $method) {
+            $this->toggleCrypto($socket, $deferred, $toggle, $method);
         };
 
         $this->loop->addReadStream($socket, $toggleCrypto);
@@ -90,17 +84,15 @@ class StreamEncryption
             $toggleCrypto();
         }
 
-        $loop = $this->loop;
-
-        return $deferred->promise()->then(function () use ($stream, $socket, $loop, $toggle) {
-            $loop->removeReadStream($socket);
+        return $deferred->promise()->then(function () use ($stream, $socket, $toggle) {
+            $this->loop->removeReadStream($socket);
 
             $stream->encryptionEnabled = $toggle;
             $stream->resume();
 
             return $stream;
-        }, function($error) use ($stream, $socket, $loop) {
-            $loop->removeReadStream($socket);
+        }, function($error) use ($stream, $socket) {
+            $this->loop->removeReadStream($socket);
             $stream->resume();
             throw $error;
         });
@@ -118,7 +110,7 @@ class StreamEncryption
     {
         $error = null;
         \set_error_handler(function ($_, $errstr) use (&$error) {
-            $error = \str_replace(array("\r", "\n"), ' ', $errstr);
+            $error = \str_replace(["\r", "\n"], ' ', $errstr);
 
             // remove useless function name from error message
             if (($pos = \strpos($error, "): ")) !== false) {

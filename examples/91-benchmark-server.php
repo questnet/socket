@@ -31,11 +31,11 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$socket = new React\Socket\SocketServer(isset($argv[1]) ? $argv[1] : '127.0.0.1:0', array(
-    'tls' => array(
-        'local_cert' => isset($argv[2]) ? $argv[2] : (__DIR__ . '/localhost.pem')
-    )
-));
+$socket = new React\Socket\SocketServer($argv[1] ?? '127.0.0.1:0', [
+    'tls' => [
+        'local_cert' => $argv[2] ?? __DIR__ . '/localhost.pem'
+    ]
+]);
 
 $socket->on('connection', function (React\Socket\ConnectionInterface $connection) {
     echo '[' . $connection->getRemoteAddress() . ' connected]' . PHP_EOL;

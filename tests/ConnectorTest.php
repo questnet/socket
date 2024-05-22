@@ -26,7 +26,7 @@ class ConnectorTest extends TestCase
     {
         $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
 
-        $connector = new Connector(array(), $loop);
+        $connector = new Connector([], $loop);
 
         $ref = new \ReflectionProperty($connector, 'connectors');
         $ref->setAccessible(true);
@@ -43,11 +43,11 @@ class ConnectorTest extends TestCase
     {
         $tcp = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
 
-        $connector = new Connector(array(
+        $connector = new Connector([
             'tcp' => $tcp,
             'dns' => false,
             'timeout' => false
-        ));
+        ]);
 
         $ref = new \ReflectionProperty($connector, 'connectors');
         $ref->setAccessible(true);
@@ -64,9 +64,9 @@ class ConnectorTest extends TestCase
         $tcp = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
         $tcp->expects($this->once())->method('connect')->with('127.0.0.1:80')->willReturn($promise);
 
-        $connector = new Connector(array(
+        $connector = new Connector([
             'tcp' => $tcp
-        ), $loop);
+        ], $loop);
 
         $connector->connect('127.0.0.1:80');
     }
@@ -79,10 +79,10 @@ class ConnectorTest extends TestCase
         $tcp = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
         $tcp->expects($this->once())->method('connect')->with('tcp://google.com:80')->willReturn($promise);
 
-        $connector = new Connector(array(
+        $connector = new Connector([
             'tcp' => $tcp,
             'dns' => false
-        ), $loop);
+        ], $loop);
 
         $connector->connect('tcp://google.com:80');
     }
@@ -90,7 +90,7 @@ class ConnectorTest extends TestCase
     public function testConnectorWithUnknownSchemeAlwaysFails()
     {
         $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
-        $connector = new Connector(array(), $loop);
+        $connector = new Connector([], $loop);
 
         $promise = $connector->connect('unknown://google.com:80');
 
@@ -104,9 +104,9 @@ class ConnectorTest extends TestCase
     public function testConnectorWithDisabledTcpDefaultSchemeAlwaysFails()
     {
         $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
-        $connector = new Connector(array(
+        $connector = new Connector([
             'tcp' => false
-        ), $loop);
+        ], $loop);
 
         $promise = $connector->connect('google.com:80');
 
@@ -120,9 +120,9 @@ class ConnectorTest extends TestCase
     public function testConnectorWithDisabledTcpSchemeAlwaysFails()
     {
         $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
-        $connector = new Connector(array(
+        $connector = new Connector([
             'tcp' => false
-        ), $loop);
+        ], $loop);
 
         $promise = $connector->connect('tcp://google.com:80');
 
@@ -136,9 +136,9 @@ class ConnectorTest extends TestCase
     public function testConnectorWithDisabledTlsSchemeAlwaysFails()
     {
         $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
-        $connector = new Connector(array(
+        $connector = new Connector([
             'tls' => false
-        ), $loop);
+        ], $loop);
 
         $promise = $connector->connect('tls://google.com:443');
 
@@ -152,9 +152,9 @@ class ConnectorTest extends TestCase
     public function testConnectorWithDisabledUnixSchemeAlwaysFails()
     {
         $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
-        $connector = new Connector(array(
+        $connector = new Connector([
             'unix' => false
-        ), $loop);
+        ], $loop);
 
         $promise = $connector->connect('unix://demo.sock');
 
@@ -173,10 +173,10 @@ class ConnectorTest extends TestCase
         $resolver = $this->getMockBuilder('React\Dns\Resolver\ResolverInterface')->getMock();
         $resolver->expects($this->once())->method('resolve')->with('google.com')->willReturn($promise);
 
-        $connector = new Connector(array(
+        $connector = new Connector([
             'dns' => $resolver,
-            'happy_eyeballs' => false,
-        ), $loop);
+            'happy_eyeballs' => false
+        ], $loop);
 
         $connector->connect('google.com:80');
     }
@@ -193,11 +193,11 @@ class ConnectorTest extends TestCase
         $tcp = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
         $tcp->expects($this->once())->method('connect')->with('tcp://127.0.0.1:80?hostname=google.com')->willReturn($promise);
 
-        $connector = new Connector(array(
+        $connector = new Connector([
             'tcp' => $tcp,
             'dns' => $resolver,
-            'happy_eyeballs' => false,
-        ), $loop);
+            'happy_eyeballs' => false
+        ], $loop);
 
         $connector->connect('tcp://google.com:80');
     }

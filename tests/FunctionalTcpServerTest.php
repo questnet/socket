@@ -6,6 +6,9 @@ use React\Promise\Promise;
 use React\Socket\ConnectionInterface;
 use React\Socket\TcpConnector;
 use React\Socket\TcpServer;
+use function React\Async\await;
+use function React\Promise\Timer\sleep;
+use function React\Promise\Timer\timeout;
 
 class FunctionalTcpServerTest extends TestCase
 {
@@ -27,8 +30,8 @@ class FunctionalTcpServerTest extends TestCase
 
         $promise->then($this->expectCallableOnce());
 
-        \React\Async\await(\React\Promise\Timer\timeout($peer, self::TIMEOUT));
-        \React\Async\await(\React\Promise\Timer\sleep(0.0));
+        await(timeout($peer, self::TIMEOUT));
+        await(sleep(0.0));
 
         $server->close();
 
@@ -48,8 +51,8 @@ class FunctionalTcpServerTest extends TestCase
 
         $promise->then($this->expectCallableOnce());
 
-        \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
-        \React\Async\await(\React\Promise\Timer\sleep(0.0));
+        await(timeout($promise, self::TIMEOUT));
+        await(sleep(0.0));
     }
 
     public function testConnectionForNewConnectionWhenResumedAfterPause()
@@ -70,8 +73,8 @@ class FunctionalTcpServerTest extends TestCase
 
         $promise->then($this->expectCallableOnce());
 
-        \React\Async\await(\React\Promise\Timer\timeout($peer, self::TIMEOUT));
-        \React\Async\await(\React\Promise\Timer\sleep(0.0));
+        await(timeout($peer, self::TIMEOUT));
+        await(sleep(0.0));
 
         $server->close();
         $promise->then(function (ConnectionInterface $connection) {
@@ -93,8 +96,8 @@ class FunctionalTcpServerTest extends TestCase
 
         $promise->then($this->expectCallableOnce());
 
-        $peer = \React\Async\await(\React\Promise\Timer\timeout($peer, self::TIMEOUT));
-        \React\Async\await(\React\Promise\Timer\sleep(0.0));
+        $peer = await(timeout($peer, self::TIMEOUT));
+        await(sleep(0.0));
 
         $this->assertContainsString('127.0.0.1:', $peer);
 
@@ -120,8 +123,8 @@ class FunctionalTcpServerTest extends TestCase
 
         $promise->then($this->expectCallableOnce());
 
-        $local = \React\Async\await(\React\Promise\Timer\timeout($peer, self::TIMEOUT));
-        \React\Async\await(\React\Promise\Timer\sleep(0.0));
+        $local = await(timeout($peer, self::TIMEOUT));
+        await(sleep(0.0));
 
         $this->assertContainsString('127.0.0.1:', $local);
         $this->assertEquals($server->getAddress(), $local);
@@ -150,8 +153,8 @@ class FunctionalTcpServerTest extends TestCase
 
         $promise->then($this->expectCallableOnce());
 
-        $local = \React\Async\await(\React\Promise\Timer\timeout($peer, self::TIMEOUT));
-        \React\Async\await(\React\Promise\Timer\sleep(0.0));
+        $local = await(timeout($peer, self::TIMEOUT));
+        await(sleep(0.0));
 
         $this->assertContainsString('127.0.0.1:', $local);
 
@@ -177,7 +180,7 @@ class FunctionalTcpServerTest extends TestCase
             $connection->end();
         });
 
-        $peer = \React\Async\await(\React\Promise\Timer\timeout($peer, self::TIMEOUT));
+        $peer = await(timeout($peer, self::TIMEOUT));
 
         $this->assertContainsString('127.0.0.1:', $peer);
 
@@ -199,8 +202,8 @@ class FunctionalTcpServerTest extends TestCase
 
         $promise->then($this->expectCallableOnce());
 
-        $peer = \React\Async\await(\React\Promise\Timer\timeout($peer, self::TIMEOUT));
-        \React\Async\await(\React\Promise\Timer\sleep(0.0));
+        $peer = await(timeout($peer, self::TIMEOUT));
+        await(sleep(0.0));
 
         $this->assertNull($peer);
 
@@ -228,7 +231,7 @@ class FunctionalTcpServerTest extends TestCase
 
         $promise->then(null, $this->expectCallableOnce());
 
-        \React\Async\await(\React\Promise\Timer\timeout($peer, self::TIMEOUT));
+        await(timeout($peer, self::TIMEOUT));
 
         $server->close();
     }
@@ -254,8 +257,8 @@ class FunctionalTcpServerTest extends TestCase
 
         $promise->then($this->expectCallableOnce());
 
-        \React\Async\await(\React\Promise\Timer\timeout($peer, self::TIMEOUT));
-        \React\Async\await(\React\Promise\Timer\sleep(0.0));
+        await(timeout($peer, self::TIMEOUT));
+        await(sleep(0.0));
 
         $server->close();
         $promise->then(function (ConnectionInterface $connection) {
@@ -282,8 +285,8 @@ class FunctionalTcpServerTest extends TestCase
 
         $promise->then($this->expectCallableOnce());
 
-        $peer = \React\Async\await(\React\Promise\Timer\timeout($peer, self::TIMEOUT));
-        \React\Async\await(\React\Promise\Timer\sleep(0.0));
+        $peer = await(timeout($peer, self::TIMEOUT));
+        await(sleep(0.0));
 
         $this->assertContainsString('[::1]:', $peer);
 
@@ -312,8 +315,8 @@ class FunctionalTcpServerTest extends TestCase
 
         $promise->then($this->expectCallableOnce());
 
-        $local = \React\Async\await(\React\Promise\Timer\timeout($peer, self::TIMEOUT));
-        \React\Async\await(\React\Promise\Timer\sleep(0.0));
+        $local = await(timeout($peer, self::TIMEOUT));
+        await(sleep(0.0));
 
         $this->assertContainsString('[::1]:', $local);
         $this->assertEquals($server->getAddress(), $local);
@@ -326,9 +329,9 @@ class FunctionalTcpServerTest extends TestCase
 
     public function testServerPassesContextOptionsToSocket()
     {
-        $server = new TcpServer(0, null, array(
+        $server = new TcpServer(0, null, [
             'backlog' => 4
-        ));
+        ]);
 
         $ref = new \ReflectionProperty($server, 'master');
         $ref->setAccessible(true);
@@ -336,7 +339,7 @@ class FunctionalTcpServerTest extends TestCase
 
         $context = stream_context_get_options($socket);
 
-        $this->assertEquals(array('socket' => array('backlog' => 4)), $context);
+        $this->assertEquals(['socket' => ['backlog' => 4]], $context);
 
         $server->close();
     }
@@ -351,16 +354,16 @@ class FunctionalTcpServerTest extends TestCase
 
         $context = stream_context_get_options($socket);
 
-        $this->assertEquals(array('socket' => array('backlog' => 511)), $context);
+        $this->assertEquals(['socket' => ['backlog' => 511]], $context);
 
         $server->close();
     }
 
     public function testEmitsConnectionWithInheritedContextOptions()
     {
-        $server = new TcpServer(0, null, array(
+        $server = new TcpServer(0, null, [
             'backlog' => 4
-        ));
+        ]);
 
         $peer = new Promise(function ($resolve, $reject) use ($server) {
             $server->on('connection', function (ConnectionInterface $connection) use ($resolve) {
@@ -373,10 +376,10 @@ class FunctionalTcpServerTest extends TestCase
 
         $promise->then($this->expectCallableOnce());
 
-        $all = \React\Async\await(\React\Promise\Timer\timeout($peer, self::TIMEOUT));
-        \React\Async\await(\React\Promise\Timer\sleep(0.0));
+        $all = await(timeout($peer, self::TIMEOUT));
+        await(sleep(0.0));
 
-        $this->assertEquals(array('socket' => array('backlog' => 4)), $all);
+        $this->assertEquals(['socket' => ['backlog' => 4]], $all);
 
         $server->close();
         $promise->then(function (ConnectionInterface $connection) {

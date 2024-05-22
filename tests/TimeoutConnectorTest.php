@@ -6,6 +6,8 @@ use React\EventLoop\Loop;
 use React\Promise\Deferred;
 use React\Promise\Promise;
 use React\Socket\TimeoutConnector;
+use function React\Promise\reject;
+use function React\Promise\resolve;
 
 class TimeoutConnectorTest extends TestCase
 {
@@ -29,7 +31,7 @@ class TimeoutConnectorTest extends TestCase
         $loop->expects($this->never())->method('cancelTimer');
 
         $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
-        $connector->expects($this->once())->method('connect')->with('example.com:80')->willReturn(\React\Promise\reject(new \RuntimeException('Failed', 42)));
+        $connector->expects($this->once())->method('connect')->with('example.com:80')->willReturn(reject(new \RuntimeException('Failed', 42)));
 
         $timeout = new TimeoutConnector($connector, 5.0, $loop);
 
@@ -80,7 +82,7 @@ class TimeoutConnectorTest extends TestCase
 
         $connection = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
         $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
-        $connector->expects($this->once())->method('connect')->with('example.com:80')->willReturn(\React\Promise\resolve($connection));
+        $connector->expects($this->once())->method('connect')->with('example.com:80')->willReturn(resolve($connection));
 
         $timeout = new TimeoutConnector($connector, 5.0, $loop);
 

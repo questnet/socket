@@ -73,9 +73,9 @@ class Connection extends EventEmitter implements ConnectionInterface
 
         $this->stream = $resource;
 
-        Util::forwardEvents($this->input, $this, array('data', 'end', 'error', 'close', 'pipe', 'drain'));
+        Util::forwardEvents($this->input, $this, ['data', 'end', 'error', 'close', 'pipe', 'drain']);
 
-        $this->input->on('close', array($this, 'close'));
+        $this->input->on('close', [$this, 'close']);
     }
 
     public function isReadable()
@@ -98,7 +98,7 @@ class Connection extends EventEmitter implements ConnectionInterface
         $this->input->resume();
     }
 
-    public function pipe(WritableStreamInterface $dest, array $options = array())
+    public function pipe(WritableStreamInterface $dest, array $options = [])
     {
         return $this->input->pipe($dest, $options);
     }

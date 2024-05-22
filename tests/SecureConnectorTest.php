@@ -2,9 +2,11 @@
 
 namespace React\Tests\Socket;
 
-use React\Promise;
 use React\Promise\Deferred;
+use React\Promise\Promise;
 use React\Socket\SecureConnector;
+use function React\Promise\reject;
+use function React\Promise\resolve;
 
 class SecureConnectorTest extends TestCase
 {
@@ -39,7 +41,7 @@ class SecureConnectorTest extends TestCase
 
     public function testConnectionWillWaitForTcpConnection()
     {
-        $pending = new Promise\Promise(function () { });
+        $pending = new Promise(function () { });
         $this->tcp->expects($this->once())->method('connect')->with($this->equalTo('example.com:80'))->will($this->returnValue($pending));
 
         $promise = $this->connector->connect('example.com:80');
@@ -49,7 +51,7 @@ class SecureConnectorTest extends TestCase
 
     public function testConnectionWithCompleteUriWillBePassedThroughExpectForScheme()
     {
-        $pending = new Promise\Promise(function () { });
+        $pending = new Promise(function () { });
         $this->tcp->expects($this->once())->method('connect')->with($this->equalTo('example.com:80/path?query#fragment'))->will($this->returnValue($pending));
 
         $this->connector->connect('tls://example.com:80/path?query#fragment');
@@ -70,7 +72,7 @@ class SecureConnectorTest extends TestCase
 
     public function testConnectWillRejectWithTlsUriWhenUnderlyingConnectorRejects()
     {
-        $this->tcp->expects($this->once())->method('connect')->with('example.com:80')->willReturn(\React\Promise\reject(new \RuntimeException(
+        $this->tcp->expects($this->once())->method('connect')->with('example.com:80')->willReturn(reject(new \RuntimeException(
             'Connection to tcp://example.com:80 failed: Connection refused (ECONNREFUSED)',
             defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111
         )));
@@ -92,7 +94,7 @@ class SecureConnectorTest extends TestCase
 
     public function testConnectWillRejectWithOriginalMessageWhenUnderlyingConnectorRejectsWithInvalidArgumentException()
     {
-        $this->tcp->expects($this->once())->method('connect')->with('example.com:80')->willReturn(\React\Promise\reject(new \InvalidArgumentException(
+        $this->tcp->expects($this->once())->method('connect')->with('example.com:80')->willReturn(reject(new \InvalidArgumentException(
             'Invalid',
             42
         )));
@@ -114,7 +116,7 @@ class SecureConnectorTest extends TestCase
 
     public function testCancelDuringTcpConnectionCancelsTcpConnection()
     {
-        $pending = new Promise\Promise(function () { }, $this->expectCallableOnce());
+        $pending = new Promise(function () { }, $this->expectCallableOnce());
         $this->tcp->expects($this->once())->method('connect')->with('example.com:80')->willReturn($pending);
 
         $promise = $this->connector->connect('example.com:80');
@@ -123,7 +125,7 @@ class SecureConnectorTest extends TestCase
 
     public function testCancelDuringTcpConnectionCancelsTcpConnectionAndRejectsWithTcpRejection()
     {
-        $pending = new Promise\Promise(function () { }, function () { throw new \RuntimeException(
+        $pending = new Promise(function () { }, function () { throw new \RuntimeException(
             'Connection to tcp://example.com:80 cancelled (ECONNABORTED)',
             defined('SOCKET_ECONNABORTED') ? SOCKET_ECONNABORTED : 103
         ); });
@@ -150,7 +152,7 @@ class SecureConnectorTest extends TestCase
         $connection = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
         $connection->expects($this->once())->method('close');
 
-        $this->tcp->expects($this->once())->method('connect')->with($this->equalTo('example.com:80'))->willReturn(Promise\resolve($connection));
+        $this->tcp->expects($this->once())->method('connect')->with($this->equalTo('example.com:80'))->willReturn(resolve($connection));
 
         $promise = $this->connector->connect('example.com:80');
 
@@ -172,13 +174,13 @@ class SecureConnectorTest extends TestCase
         $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->getMock();
 
         $encryption = $this->getMockBuilder('React\Socket\StreamEncryption')->disableOriginalConstructor()->getMock();
-        $encryption->expects($this->once())->method('enable')->with($connection)->willReturn(new \React\Promise\Promise(function () { }));
+        $encryption->expects($this->once())->method('enable')->with($connection)->willReturn(new Promise(function () { }));
 
         $ref = new \ReflectionProperty($this->connector, 'streamEncryption');
         $ref->setAccessible(true);
         $ref->setValue($this->connector, $encryption);
 
-        $this->tcp->expects($this->once())->method('connect')->with($this->equalTo('example.com:80'))->willReturn(Promise\resolve($connection));
+        $this->tcp->expects($this->once())->method('connect')->with($this->equalTo('example.com:80'))->willReturn(resolve($connection));
 
         $this->connector->connect('example.com:80');
     }
@@ -189,13 +191,13 @@ class SecureConnectorTest extends TestCase
         $connection->expects($this->once())->method('close');
 
         $encryption = $this->getMockBuilder('React\Socket\StreamEncryption')->disableOriginalConstructor()->getMock();
-        $encryption->expects($this->once())->method('enable')->willReturn(Promise\reject(new \RuntimeException('TLS error', 123)));
+        $encryption->expects($this->once())->method('enable')->willReturn(reject(new \RuntimeException('TLS error', 123)));
 
         $ref = new \ReflectionProperty($this->connector, 'streamEncryption');
         $ref->setAccessible(true);
         $ref->setValue($this->connector, $encryption);
 
-        $this->tcp->expects($this->once())->method('connect')->with($this->equalTo('example.com:80'))->willReturn(Promise\resolve($connection));
+        $this->tcp->expects($this->once())->method('connect')->with($this->equalTo('example.com:80'))->willReturn(resolve($connection));
 
         $promise = $this->connector->connect('example.com:80');
 
@@ -217,7 +219,7 @@ class SecureConnectorTest extends TestCase
         $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->getMock();
         $connection->expects($this->once())->method('close');
 
-        $pending = new Promise\Promise(function () { }, function () {
+        $pending = new Promise(function () { }, function () {
             throw new \Exception('Ignored');
         });
         $encryption = $this->getMockBuilder('React\Socket\StreamEncryption')->disableOriginalConstructor()->getMock();

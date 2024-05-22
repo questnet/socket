@@ -6,6 +6,7 @@ use React\Dns\Config\Config as DnsConfig;
 use React\Dns\Resolver\Factory as DnsFactory;
 use React\Dns\Resolver\ResolverInterface;
 use React\EventLoop\LoopInterface;
+use function React\Promise\reject;
 
 /**
  * The `Connector` class is the main class in this package that implements the
@@ -24,7 +25,7 @@ use React\EventLoop\LoopInterface;
  */
 final class Connector implements ConnectorInterface
 {
-    private $connectors = array();
+    private $connectors = [];
 
     /**
      * Instantiate new `Connector`
@@ -52,7 +53,7 @@ final class Connector implements ConnectorInterface
     public function __construct(array $context = array(), LoopInterface $loop = null)
     {
         // apply default options if not explicitly given
-        $context += array(
+        $context += [
             'tcp' => true,
             'tls' => true,
             'unix' => true,
@@ -60,7 +61,7 @@ final class Connector implements ConnectorInterface
             'dns' => true,
             'timeout' => true,
             'happy_eyeballs' => true,
-        );
+        ];
 
         if ($context['timeout'] === true) {
             $context['timeout'] = (float)\ini_get("default_socket_timeout");
@@ -71,7 +72,7 @@ final class Connector implements ConnectorInterface
         } else {
             $tcp = new TcpConnector(
                 $loop,
-                \is_array($context['tcp']) ? $context['tcp'] : array()
+                \is_array($context['tcp']) ? $context['tcp'] : []
             );
         }
 
@@ -122,7 +123,7 @@ final class Connector implements ConnectorInterface
                 $context['tls'] = new SecureConnector(
                     $tcp,
                     $loop,
-                    \is_array($context['tls']) ? $context['tls'] : array()
+                    \is_array($context['tls']) ? $context['tls'] : []
                 );
             }
 
@@ -153,7 +154,7 @@ final class Connector implements ConnectorInterface
         }
 
         if (!isset($this->connectors[$scheme])) {
-            return \React\Promise\reject(new \RuntimeException(
+            return reject(new \RuntimeException(
                 'No connector available for URI scheme "' . $scheme . '" (EINVAL)',
                 \defined('SOCKET_EINVAL') ? \SOCKET_EINVAL : (\defined('PCNTL_EINVAL') ? \PCNTL_EINVAL : 22)
             ));
@@ -205,8 +206,8 @@ final class Connector implements ConnectorInterface
 
         // append original hostname as query if resolved via DNS and if
         // destination URI does not contain "hostname" query param already
-        $args = array();
-        \parse_str(isset($parts['query']) ? $parts['query'] : '', $args);
+        $args = [];
+        \parse_str($parts['query'] ?? '', $args);
         if ($host !== $ip && !isset($args['hostname'])) {
             $uri .= (isset($parts['query']) ? '&' : '?') . 'hostname=' . \rawurlencode($host);
         }

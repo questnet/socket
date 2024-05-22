@@ -5,10 +5,13 @@ namespace React\Tests\Socket;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use React\Promise\Promise;
 use React\Stream\ReadableStreamInterface;
+use function React\Async\await;
+use function React\Promise\Timer\sleep;
+use function React\Promise\Timer\timeout;
 
 class TestCase extends BaseTestCase
 {
-    public function expectCallableExactly($amount)
+    protected function expectCallableExactly($amount)
     {
         $mock = $this->createCallableMock();
         $mock
@@ -75,7 +78,7 @@ class TestCase extends BaseTestCase
             return '';
         }
 
-        $buffer = \React\Async\await(\React\Promise\Timer\timeout(new Promise(
+        $buffer = await(timeout(new Promise(
             function ($resolve, $reject) use ($stream) {
                 $buffer = '';
                 $stream->on('data', function ($chunk) use (&$buffer) {
@@ -97,7 +100,7 @@ class TestCase extends BaseTestCase
         // let loop tick for reactphp/async v4 to clean up any remaining stream resources
         // @link https://github.com/reactphp/async/pull/65 reported upstream // TODO remove me once merged
         if (function_exists('React\Async\async')) {
-            \React\Async\await(\React\Promise\Timer\sleep(0));
+            await(sleep(0));
         }
 
         return $buffer;

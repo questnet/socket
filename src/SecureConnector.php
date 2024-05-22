@@ -4,7 +4,8 @@ namespace React\Socket;
 
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
-use React\Promise;
+use React\Promise\Promise;
+use function React\Promise\reject;
 
 final class SecureConnector implements ConnectorInterface
 {
@@ -12,10 +13,10 @@ final class SecureConnector implements ConnectorInterface
     private $streamEncryption;
     private $context;
 
-    public function __construct(ConnectorInterface $connector, LoopInterface $loop = null, array $context = array())
+    public function __construct(ConnectorInterface $connector, LoopInterface $loop = null, array $context = [])
     {
         $this->connector = $connector;
-        $this->streamEncryption = new StreamEncryption($loop ?: Loop::get(), false);
+        $this->streamEncryption = new StreamEncryption($loop ?? Loop::get(), false);
         $this->context = $context;
     }
 
@@ -27,19 +28,17 @@ final class SecureConnector implements ConnectorInterface
 
         $parts = \parse_url($uri);
         if (!$parts || !isset($parts['scheme']) || $parts['scheme'] !== 'tls') {
-            return Promise\reject(new \InvalidArgumentException(
+            return reject(new \InvalidArgumentException(
                 'Given URI "' . $uri . '" is invalid (EINVAL)',
                 \defined('SOCKET_EINVAL') ? \SOCKET_EINVAL : (\defined('PCNTL_EINVAL') ? \PCNTL_EINVAL : 22)
             ));
         }
 
-        $context = $this->context;
-        $encryption = $this->streamEncryption;
         $connected = false;
         /** @var \React\Promise\PromiseInterface<ConnectionInterface> $promise */
         $promise = $this->connector->connect(
             \str_replace('tls://', '', $uri)
-        )->then(function (ConnectionInterface $connection) use ($context, $encryption, $uri, &$promise, &$connected) {
+        )->then(function (ConnectionInterface $connection) use ($uri, &$promise, &$connected) {
             // (unencrypted) TCP/IP connection succeeded
             $connected = true;
 
@@ -49,12 +48,12 @@ final class SecureConnector implements ConnectorInterface
             }
 
             // set required SSL/TLS context options
-            foreach ($context as $name => $value) {
+            foreach ($this->context as $name => $value) {
                 \stream_context_set_option($connection->stream, 'ssl', $name, $value);
             }
 
             // try to enable encryption
-            return $promise = $encryption->enable($connection)->then(null, function ($error) use ($connection, $uri) {
+            return $promise = $this->streamEncryption->enable($connection)->then(null, function ($error) use ($connection, $uri) {
                 // establishing encryption failed => close invalid connection and return error
                 $connection->close();
 
@@ -74,7 +73,7 @@ final class SecureConnector implements ConnectorInterface
 
                 // avoid garbage references by replacing all closures in call stack.
                 // what a lovely piece of code!
-                $r = new \ReflectionProperty('Exception', 'trace');
+                $r = new \ReflectionProperty(\Exception::class, 'trace');
                 $r->setAccessible(true);
                 $trace = $r->getValue($e);
 
@@ -96,7 +95,7 @@ final class SecureConnector implements ConnectorInterface
             throw $e;
         });
 
-        return new \React\Promise\Promise(
+        return new Promise(
             function ($resolve, $reject) use ($promise) {
                 $promise->then($resolve, $reject);
             },

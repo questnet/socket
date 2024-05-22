@@ -6,6 +6,8 @@ use React\Promise\Promise;
 use React\Socket\ConnectionInterface;
 use React\Socket\LimitingServer;
 use React\Socket\TcpServer;
+use function React\Async\await;
+use function React\Promise\Timer\timeout;
 
 class LimitingServerTest extends TestCase
 {
@@ -85,7 +87,7 @@ class LimitingServerTest extends TestCase
 
         $server->on('error', $this->expectCallableOnce());
 
-        $tcp->emit('error', array(new \RuntimeException('test')));
+        $tcp->emit('error', [new \RuntimeException('test')]);
     }
 
     public function testSocketConnectionWillBeForwarded()
@@ -100,9 +102,9 @@ class LimitingServerTest extends TestCase
         $server->on('connection', $this->expectCallableOnceWith($connection));
         $server->on('error', $this->expectCallableNever());
 
-        $tcp->emit('connection', array($connection));
+        $tcp->emit('connection', [$connection]);
 
-        $this->assertEquals(array($connection), $server->getConnections());
+        $this->assertEquals([$connection], $server->getConnections());
     }
 
     public function testSocketConnectionWillBeClosedOnceLimitIsReached()
@@ -120,8 +122,8 @@ class LimitingServerTest extends TestCase
         $server->on('connection', $this->expectCallableOnceWith($first));
         $server->on('error', $this->expectCallableOnce());
 
-        $tcp->emit('connection', array($first));
-        $tcp->emit('connection', array($second));
+        $tcp->emit('connection', [$first]);
+        $tcp->emit('connection', [$second]);
     }
 
     public function testPausingServerWillBePausedOnceLimitIsReached()
@@ -136,7 +138,7 @@ class LimitingServerTest extends TestCase
 
         $server = new LimitingServer($tcp, 1, true);
 
-        $tcp->emit('connection', array($connection));
+        $tcp->emit('connection', [$connection]);
     }
 
     public function testSocketDisconnectionWillRemoveFromList()
@@ -158,9 +160,9 @@ class LimitingServerTest extends TestCase
             });
         });
 
-        \React\Async\await(\React\Promise\Timer\timeout($peer, self::TIMEOUT));
+        await(timeout($peer, self::TIMEOUT));
 
-        $this->assertEquals(array(), $server->getConnections());
+        $this->assertEquals([], $server->getConnections());
 
         $server->close();
     }
@@ -181,7 +183,7 @@ class LimitingServerTest extends TestCase
         $first = stream_socket_client($server->getAddress());
         $second = stream_socket_client($server->getAddress());
 
-        \React\Async\await(\React\Promise\Timer\timeout($peer, self::TIMEOUT));
+        await(timeout($peer, self::TIMEOUT));
 
         fclose($first);
         fclose($second);
@@ -211,7 +213,7 @@ class LimitingServerTest extends TestCase
         $second = stream_socket_client($server->getAddress());
         fclose($second);
 
-        \React\Async\await(\React\Promise\Timer\timeout($peer, self::TIMEOUT));
+        await(timeout($peer, self::TIMEOUT));
 
         $server->close();
     }

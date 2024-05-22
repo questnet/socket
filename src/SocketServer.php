@@ -31,14 +31,14 @@ final class SocketServer extends EventEmitter implements ServerInterface
      * @throws \InvalidArgumentException if the listening address is invalid
      * @throws \RuntimeException if listening on this address fails (already in use etc.)
      */
-    public function __construct($uri, array $context = array(), LoopInterface $loop = null)
+    public function __construct($uri, array $context = [], LoopInterface $loop = null)
     {
         // apply default options if not explicitly given
-        $context += array(
-            'tcp' => array(),
-            'tls' => array(),
-            'unix' => array()
-        );
+        $context += [
+            'tcp' => [],
+            'tls' => [],
+            'unix' => []
+        ];
 
         $scheme = 'tcp';
         $pos = \strpos($uri, '://');
@@ -67,12 +67,11 @@ final class SocketServer extends EventEmitter implements ServerInterface
 
         $this->server = $server;
 
-        $that = $this;
-        $server->on('connection', function (ConnectionInterface $conn) use ($that) {
-            $that->emit('connection', array($conn));
+        $server->on('connection', function (ConnectionInterface $conn) {
+            $this->emit('connection', [$conn]);
         });
-        $server->on('error', function (\Exception $error) use ($that) {
-            $that->emit('error', array($error));
+        $server->on('error', function (\Exception $error) {
+            $this->emit('error', [$error]);
         });
     }
 
@@ -112,7 +111,7 @@ final class SocketServer extends EventEmitter implements ServerInterface
             // Match errstr from PHP's warning message.
             // stream_socket_accept(): accept failed: Connection timed out
             $errstr = \preg_replace('#.*: #', '', $error);
-            $errno = SocketServer::errno($errstr);
+            $errno = self::errno($errstr);
         });
 
         $newSocket = \stream_socket_accept($socket, 0);

@@ -5,6 +5,8 @@ namespace React\Tests\Socket;
 use React\Promise\Promise;
 use React\Socket\ConnectionInterface;
 use React\Socket\FdServer;
+use function React\Async\await;
+use function React\Promise\Timer\timeout;
 
 class FdServerTest extends TestCase
 {
@@ -324,7 +326,7 @@ class FdServerTest extends TestCase
             $server->on('connection', $resolve);
         });
 
-        $connection = \React\Async\await(\React\Promise\Timer\timeout($promise, 1.0));
+        $connection = await(timeout($promise, 1.0));
 
         /**
          * @var ConnectionInterface $connection
