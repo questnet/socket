@@ -3,6 +3,7 @@
 namespace React\Tests\Socket;
 
 use React\Promise\Promise;
+use React\Socket\Connection;
 use React\Socket\ConnectionInterface;
 use React\Socket\SecureConnector;
 use React\Socket\ServerInterface;
@@ -32,7 +33,7 @@ class FunctionalSecureServerTest extends TestCase
         /* @var ConnectionInterface $client */
         $client = await(timeout($promise, self::TIMEOUT));
 
-        $this->assertInstanceOf('React\Socket\ConnectionInterface', $client);
+        $this->assertInstanceOf(ConnectionInterface::class, $client);
         $this->assertEquals($server->getAddress(), $client->getRemoteAddress());
 
         $client->close();
@@ -61,7 +62,7 @@ class FunctionalSecureServerTest extends TestCase
         /* @var ConnectionInterface $client */
         $client = await(timeout($promise, self::TIMEOUT));
 
-        $this->assertInstanceOf('React\Socket\Connection', $client);
+        $this->assertInstanceOf(Connection::class, $client);
         $this->assertTrue(isset($client->stream));
 
         $meta = stream_get_meta_data($client->stream);
@@ -96,7 +97,7 @@ class FunctionalSecureServerTest extends TestCase
         /* @var ConnectionInterface $client */
         $client = await(timeout($promise, self::TIMEOUT));
 
-        $this->assertInstanceOf('React\Socket\Connection', $client);
+        $this->assertInstanceOf(Connection::class, $client);
         $this->assertTrue(isset($client->stream));
 
         $meta = stream_get_meta_data($client->stream);
@@ -123,7 +124,7 @@ class FunctionalSecureServerTest extends TestCase
         /* @var ConnectionInterface $client */
         $client = await(timeout($promise, self::TIMEOUT));
 
-        $this->assertInstanceOf('React\Socket\Connection', $client);
+        $this->assertInstanceOf(Connection::class, $client);
         $this->assertTrue(isset($client->stream));
 
         $meta = stream_get_meta_data($client->stream);
@@ -161,7 +162,7 @@ class FunctionalSecureServerTest extends TestCase
             $this->markTestSkipped('TLS 1.0 not available on this system (' . $e->getMessage() . ')');
         }
 
-        $this->assertInstanceOf('React\Socket\Connection', $client);
+        $this->assertInstanceOf(Connection::class, $client);
         $this->assertTrue(isset($client->stream));
 
         $meta = stream_get_meta_data($client->stream);
@@ -195,8 +196,8 @@ class FunctionalSecureServerTest extends TestCase
 
         // both ends of the connection are represented by different instances of ConnectionInterface
         $this->assertCount(2, $both);
-        $this->assertInstanceOf('React\Socket\ConnectionInterface', $both[0]);
-        $this->assertInstanceOf('React\Socket\ConnectionInterface', $both[1]);
+        $this->assertInstanceOf(ConnectionInterface::class, $both[0]);
+        $this->assertInstanceOf(ConnectionInterface::class, $both[1]);
         $this->assertNotSame($both[0], $both[1]);
 
         // server side end has local server address and client end has remote server address
@@ -484,7 +485,8 @@ class FunctionalSecureServerTest extends TestCase
         ]);
         $promise = $connector->connect($server->getAddress());
 
-        $this->setExpectedException('RuntimeException', 'handshake');
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('handshake');
 
         try {
             await(timeout($promise, self::TIMEOUT));
@@ -515,7 +517,7 @@ class FunctionalSecureServerTest extends TestCase
 
         $connection = await(timeout($peer, self::TIMEOUT));
 
-        $this->assertInstanceOf('React\Socket\ConnectionInterface', $connection);
+        $this->assertInstanceOf(ConnectionInterface::class, $connection);
 
         $server->close();
         $connection->close();
@@ -533,7 +535,8 @@ class FunctionalSecureServerTest extends TestCase
         ]);
         $promise = $connector->connect($server->getAddress());
 
-        $this->setExpectedException('RuntimeException', 'handshake');
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('handshake');
 
         try {
             await(timeout($promise, self::TIMEOUT));
@@ -569,7 +572,8 @@ class FunctionalSecureServerTest extends TestCase
             // ignore client-side exception
         }
 
-        $this->setExpectedException('RuntimeException', 'handshake');
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('handshake');
 
         try {
             await(timeout($peer, self::TIMEOUT));
@@ -598,7 +602,8 @@ class FunctionalSecureServerTest extends TestCase
         ]);
         $promise = $connector->connect($server->getAddress());
 
-        $this->setExpectedException('RuntimeException', 'handshake');
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('handshake');
 
         try {
             await(timeout($promise, self::TIMEOUT));
@@ -628,7 +633,8 @@ class FunctionalSecureServerTest extends TestCase
         ]);
         $promise = $connector->connect($server->getAddress());
 
-        $this->setExpectedException('RuntimeException', 'handshake');
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('handshake');
 
         try {
             await(timeout($promise, self::TIMEOUT));
@@ -703,7 +709,7 @@ class FunctionalSecureServerTest extends TestCase
         $error = await(timeout($errorEvent, self::TIMEOUT));
 
         // Connection from tcp://127.0.0.1:39528 failed during TLS handshake: Connection lost during TLS handshake (ECONNRESET)
-        $this->assertInstanceOf('RuntimeException', $error);
+        $this->assertInstanceOf(\RuntimeException::class, $error);
         $this->assertStringStartsWith('Connection from tcp://', $error->getMessage());
         $this->assertStringEndsWith('failed during TLS handshake: Connection lost during TLS handshake (ECONNRESET)', $error->getMessage());
         $this->assertEquals(defined('SOCKET_ECONNRESET') ? SOCKET_ECONNRESET : 104, $error->getCode());
@@ -731,7 +737,7 @@ class FunctionalSecureServerTest extends TestCase
         $error = await(timeout($errorEvent, self::TIMEOUT));
 
         // Connection from tcp://127.0.0.1:39528 failed during TLS handshake: Connection lost during TLS handshake (ECONNRESET)
-        $this->assertInstanceOf('RuntimeException', $error);
+        $this->assertInstanceOf(\RuntimeException::class, $error);
         $this->assertStringStartsWith('Connection from tcp://', $error->getMessage());
         $this->assertStringEndsWith('failed during TLS handshake: Connection lost during TLS handshake (ECONNRESET)', $error->getMessage());
         $this->assertEquals(defined('SOCKET_ECONNRESET') ? SOCKET_ECONNRESET : 104, $error->getCode());
@@ -753,7 +759,7 @@ class FunctionalSecureServerTest extends TestCase
         $promise = $connector->connect(str_replace('tls://', '', $server->getAddress()));
 
         $connection = await(timeout($promise, self::TIMEOUT));
-        $this->assertInstanceOf('React\Socket\ConnectionInterface', $connection);
+        $this->assertInstanceOf(ConnectionInterface::class, $connection);
 
         $server->close();
         $promise->then(function (ConnectionInterface $connection) {
@@ -779,7 +785,7 @@ class FunctionalSecureServerTest extends TestCase
 
         $error = await(timeout($errorEvent, self::TIMEOUT));
 
-        $this->assertInstanceOf('RuntimeException', $error);
+        $this->assertInstanceOf(\RuntimeException::class, $error);
 
         // OpenSSL error messages are version/platform specific
         // Unable to complete TLS handshake: SSL operation failed with code 1. OpenSSL Error messages: error:1408F10B:SSL routines:SSL3_GET_RECORD:http request
@@ -808,7 +814,7 @@ class FunctionalSecureServerTest extends TestCase
 
         $error = await(timeout($errorEvent, self::TIMEOUT));
 
-        $this->assertInstanceOf('RuntimeException', $error);
+        $this->assertInstanceOf(\RuntimeException::class, $error);
 
         // OpenSSL error messages are version/platform specific
         // Unable to complete TLS handshake: SSL operation failed with code 1. OpenSSL Error messages: error:1408F10B:SSL routines:SSL3_GET_RECORD:unknown protocol

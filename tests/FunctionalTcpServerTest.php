@@ -99,7 +99,7 @@ class FunctionalTcpServerTest extends TestCase
         $peer = await(timeout($peer, self::TIMEOUT));
         await(sleep(0.0));
 
-        $this->assertContainsString('127.0.0.1:', $peer);
+        $this->assertStringContainsString('127.0.0.1:', $peer);
 
         $server->close();
         $promise->then(function (ConnectionInterface $connection) {
@@ -126,7 +126,7 @@ class FunctionalTcpServerTest extends TestCase
         $local = await(timeout($peer, self::TIMEOUT));
         await(sleep(0.0));
 
-        $this->assertContainsString('127.0.0.1:', $local);
+        $this->assertStringContainsString('127.0.0.1:', $local);
         $this->assertEquals($server->getAddress(), $local);
 
         $server->close();
@@ -156,7 +156,7 @@ class FunctionalTcpServerTest extends TestCase
         $local = await(timeout($peer, self::TIMEOUT));
         await(sleep(0.0));
 
-        $this->assertContainsString('127.0.0.1:', $local);
+        $this->assertStringContainsString('127.0.0.1:', $local);
 
         $server->close();
         $promise->then(function (ConnectionInterface $connection) {
@@ -182,7 +182,7 @@ class FunctionalTcpServerTest extends TestCase
 
         $peer = await(timeout($peer, self::TIMEOUT));
 
-        $this->assertContainsString('127.0.0.1:', $peer);
+        $this->assertStringContainsString('127.0.0.1:', $peer);
 
         $server->close();
     }
@@ -288,7 +288,7 @@ class FunctionalTcpServerTest extends TestCase
         $peer = await(timeout($peer, self::TIMEOUT));
         await(sleep(0.0));
 
-        $this->assertContainsString('[::1]:', $peer);
+        $this->assertStringContainsString('[::1]:', $peer);
 
         $server->close();
         $promise->then(function (ConnectionInterface $connection) {
@@ -318,7 +318,7 @@ class FunctionalTcpServerTest extends TestCase
         $local = await(timeout($peer, self::TIMEOUT));
         await(sleep(0.0));
 
-        $this->assertContainsString('[::1]:', $local);
+        $this->assertStringContainsString('[::1]:', $local);
         $this->assertEquals($server->getAddress(), $local);
 
         $server->close();
@@ -389,41 +389,33 @@ class FunctionalTcpServerTest extends TestCase
 
     public function testFailsToListenOnInvalidUri()
     {
-        $this->setExpectedException(
-            'InvalidArgumentException',
-            'Invalid URI "tcp://///" given (EINVAL)',
-            defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22)
-        );
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid URI "tcp://///" given (EINVAL)');
+        $this->expectExceptionCode(defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22));
         new TcpServer('///');
     }
 
     public function testFailsToListenOnUriWithoutPort()
     {
-        $this->setExpectedException(
-            'InvalidArgumentException',
-            'Invalid URI "tcp://127.0.0.1" given (EINVAL)',
-            defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22)
-        );
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid URI "tcp://127.0.0.1" given (EINVAL)');
+        $this->expectExceptionCode(defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22));
         new TcpServer('127.0.0.1');
     }
 
     public function testFailsToListenOnUriWithWrongScheme()
     {
-        $this->setExpectedException(
-            'InvalidArgumentException',
-            'Invalid URI "udp://127.0.0.1:0" given (EINVAL)',
-            defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22)
-        );
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid URI "udp://127.0.0.1:0" given (EINVAL)');
+        $this->expectExceptionCode(defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22));
         new TcpServer('udp://127.0.0.1:0');
     }
 
     public function testFailsToListenOnUriWIthHostname()
     {
-        $this->setExpectedException(
-            'InvalidArgumentException',
-            'Given URI "tcp://localhost:8080" does not contain a valid host IP (EINVAL)',
-            defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22)
-        );
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Given URI "tcp://localhost:8080" does not contain a valid host IP (EINVAL)');
+        $this->expectExceptionCode(defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22));
         new TcpServer('localhost:8080');
     }
 }

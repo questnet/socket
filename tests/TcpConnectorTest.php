@@ -2,9 +2,12 @@
 
 namespace React\Tests\Socket;
 
+use PHPUnit\Framework\Error\Warning;
 use React\EventLoop\Loop;
+use React\EventLoop\LoopInterface;
 use React\Promise\Promise;
 use React\Socket\ConnectionInterface;
+use React\Socket\SocketServer;
 use React\Socket\TcpConnector;
 use React\Socket\TcpServer;
 use function React\Async\await;
@@ -22,7 +25,7 @@ class TcpConnectorTest extends TestCase
         $ref->setAccessible(true);
         $loop = $ref->getValue($connector);
 
-        $this->assertInstanceOf('React\EventLoop\LoopInterface', $loop);
+        $this->assertInstanceOf(LoopInterface::class, $loop);
     }
 
     /** @test */
@@ -36,11 +39,9 @@ class TcpConnectorTest extends TestCase
             $error = $errstr;
         });
 
-        $this->setExpectedException(
-            'RuntimeException',
-            'Connection to tcp://127.0.0.1:9999 failed: Connection refused' . (function_exists('socket_import_stream') ? ' (ECONNREFUSED)' : ''),
-            defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111
-        );
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Connection to tcp://127.0.0.1:9999 failed: Connection refused' . (function_exists('socket_import_stream') ? ' (ECONNREFUSED)' : ''));
+        $this->expectExceptionCode(defined('SOCKET_ECONNREFUSED') ? SOCKET_ECONNREFUSED : 111);
 
         try {
             await(timeout($promise, self::TIMEOUT));
@@ -57,7 +58,7 @@ class TcpConnectorTest extends TestCase
     /** @test */
     public function connectionToTcpServerShouldAddResourceToLoop()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $connector = new TcpConnector($loop);
 
         $server = new TcpServer(0, $loop);
@@ -81,7 +82,7 @@ class TcpConnectorTest extends TestCase
 
         $connection = await(timeout($connector->connect('127.0.0.1:9999'), self::TIMEOUT));
 
-        $this->assertInstanceOf('React\Socket\ConnectionInterface', $connection);
+        $this->assertInstanceOf(ConnectionInterface::class, $connection);
 
         $connection->close();
         $server->close();
@@ -116,8 +117,8 @@ class TcpConnectorTest extends TestCase
         }
 
         // dummy rejected promise to make sure autoloader has initialized all classes
-        class_exists('React\Socket\SocketServer', true);
-        class_exists('PHPUnit\Framework\Error\Warning', true);
+        class_exists(SocketServer::class, true);
+        class_exists(Warning::class, true);
         $promise = new Promise(function () { throw new \RuntimeException('dummy'); });
         $promise->then(null, $this->expectCallableOnce()); // avoid reporting unhandled rejection
         unset($promise);
@@ -132,7 +133,7 @@ class TcpConnectorTest extends TestCase
             $fds[] = $fd;
         }
 
-        $this->setExpectedException('RuntimeException');
+        $this->expectException(\RuntimeException::class);
         await(timeout($connector->connect('127.0.0.1:9999'), self::TIMEOUT));
     }
 
@@ -160,11 +161,9 @@ class TcpConnectorTest extends TestCase
 
         $promise = $connector->connect($address);
 
-        $this->setExpectedException(
-            'RuntimeException',
-            'Connection to ' . $address . ' failed: ' . (function_exists('socket_strerror') ? socket_strerror($enetunreach) . ' (ENETUNREACH)' : 'Network is unreachable'),
-            $enetunreach
-        );
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Connection to ' . $address . ' failed: ' . (function_exists('socket_strerror') ? socket_strerror($enetunreach) . ' (ENETUNREACH)' : 'Network is unreachable'));
+        $this->expectExceptionCode($enetunreach);
         await(timeout($promise, self::TIMEOUT));
     }
 
@@ -194,7 +193,7 @@ class TcpConnectorTest extends TestCase
         $connection = await(timeout($connector->connect('127.0.0.1:9999'), self::TIMEOUT));
         /* @var $connection ConnectionInterface */
 
-        $this->assertContainsString('tcp://127.0.0.1:', $connection->getLocalAddress());
+        $this->assertStringContainsString('tcp://127.0.0.1:', $connection->getLocalAddress());
         $this->assertNotEquals('tcp://127.0.0.1:9999', $connection->getLocalAddress());
 
         $connection->close();
@@ -267,7 +266,7 @@ class TcpConnectorTest extends TestCase
 
         $this->assertEquals('tcp://[::1]:9999', $connection->getRemoteAddress());
 
-        $this->assertContainsString('tcp://[::1]:', $connection->getLocalAddress());
+        $this->assertStringContainsString('tcp://[::1]:', $connection->getLocalAddress());
         $this->assertNotEquals('tcp://[::1]:9999', $connection->getLocalAddress());
 
         $connection->close();
@@ -277,13 +276,13 @@ class TcpConnectorTest extends TestCase
     /** @test */
     public function connectionToHostnameShouldFailImmediately()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
 
         $connector = new TcpConnector($loop);
         $promise = $connector->connect('www.google.com:80');
 
         $promise->then(null, $this->expectCallableOnceWithException(
-            'InvalidArgumentException',
+            \InvalidArgumentException::class,
             'Given URI "tcp://www.google.com:80" does not contain a valid host IP (EINVAL)',
             defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22)
         ));
@@ -292,13 +291,13 @@ class TcpConnectorTest extends TestCase
     /** @test */
     public function connectionToInvalidPortShouldFailImmediately()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
 
         $connector = new TcpConnector($loop);
         $promise = $connector->connect('255.255.255.255:12345678');
 
         $promise->then(null, $this->expectCallableOnceWithException(
-            'InvalidArgumentException',
+            \InvalidArgumentException::class,
             'Given URI "tcp://255.255.255.255:12345678" is invalid (EINVAL)',
             defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22)
         ));
@@ -307,7 +306,7 @@ class TcpConnectorTest extends TestCase
     /** @test */
     public function connectionToInvalidSchemeShouldFailImmediately()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
 
         $connector = new TcpConnector($loop);
         $connector->connect('tls://google.com:443')->then(
@@ -319,7 +318,7 @@ class TcpConnectorTest extends TestCase
     /** @test */
     public function cancellingConnectionShouldRemoveResourceFromLoopAndCloseResource()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $connector = new TcpConnector($loop);
 
         $server = new TcpServer(0, $loop);
@@ -354,11 +353,9 @@ class TcpConnectorTest extends TestCase
         $promise = $connector->connect($server->getAddress());
         $promise->cancel();
 
-        $this->setExpectedException(
-            'RuntimeException',
-            'Connection to ' . $server->getAddress() . ' cancelled during TCP/IP handshake (ECONNABORTED)',
-            defined('SOCKET_ECONNABORTED') ? SOCKET_ECONNABORTED : 103
-        );
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Connection to ' . $server->getAddress() . ' cancelled during TCP/IP handshake (ECONNABORTED)');
+        $this->expectExceptionCode(defined('SOCKET_ECONNABORTED') ? SOCKET_ECONNABORTED : 103);
 
         try {
             await($promise);
@@ -378,7 +375,7 @@ class TcpConnectorTest extends TestCase
             // collect all garbage cycles
         }
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $connector = new TcpConnector($loop);
         $promise = $connector->connect('127.0.0.1:9999');
 

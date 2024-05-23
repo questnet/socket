@@ -3,8 +3,12 @@
 namespace React\Tests\Socket;
 
 use React\EventLoop\Loop;
+use React\EventLoop\LoopInterface;
+use React\EventLoop\TimerInterface;
 use React\Promise\Deferred;
 use React\Promise\Promise;
+use React\Socket\ConnectionInterface;
+use React\Socket\ConnectorInterface;
 use React\Socket\TimeoutConnector;
 use function React\Promise\reject;
 use function React\Promise\resolve;
@@ -13,7 +17,7 @@ class TimeoutConnectorTest extends TestCase
 {
     public function testConstructWithoutLoopAssignsLoopAutomatically()
     {
-        $base = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
+        $base = $this->createMock(ConnectorInterface::class);
 
         $connector = new TimeoutConnector($base, 0.01);
 
@@ -21,16 +25,16 @@ class TimeoutConnectorTest extends TestCase
         $ref->setAccessible(true);
         $loop = $ref->getValue($connector);
 
-        $this->assertInstanceOf('React\EventLoop\LoopInterface', $loop);
+        $this->assertInstanceOf(LoopInterface::class, $loop);
     }
 
     public function testRejectsPromiseWithoutStartingTimerWhenWrappedConnectorReturnsRejectedPromise()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->never())->method('addTimer');
         $loop->expects($this->never())->method('cancelTimer');
 
-        $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
+        $connector = $this->createMock(ConnectorInterface::class);
         $connector->expects($this->once())->method('connect')->with('example.com:80')->willReturn(reject(new \RuntimeException('Failed', 42)));
 
         $timeout = new TimeoutConnector($connector, 5.0, $loop);
@@ -49,13 +53,13 @@ class TimeoutConnectorTest extends TestCase
 
     public function testRejectsPromiseAfterCancellingTimerWhenWrappedConnectorReturnsPendingPromiseThatRejects()
     {
-        $timer = $this->getMockBuilder('React\EventLoop\TimerInterface')->getMock();
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $timer = $this->createMock(TimerInterface::class);
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('addTimer')->with(5.0, $this->anything())->willReturn($timer);
         $loop->expects($this->once())->method('cancelTimer')->with($timer);
 
         $deferred = new Deferred();
-        $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
+        $connector = $this->createMock(ConnectorInterface::class);
         $connector->expects($this->once())->method('connect')->with('example.com:80')->willReturn($deferred->promise());
 
         $timeout = new TimeoutConnector($connector, 5.0, $loop);
@@ -76,12 +80,12 @@ class TimeoutConnectorTest extends TestCase
 
     public function testResolvesPromiseWithoutStartingTimerWhenWrappedConnectorReturnsResolvedPromise()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->never())->method('addTimer');
         $loop->expects($this->never())->method('cancelTimer');
 
-        $connection = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
-        $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
+        $connection = $this->createMock(ConnectionInterface::class);
+        $connector = $this->createMock(ConnectorInterface::class);
         $connector->expects($this->once())->method('connect')->with('example.com:80')->willReturn(resolve($connection));
 
         $timeout = new TimeoutConnector($connector, 5.0, $loop);
@@ -98,20 +102,20 @@ class TimeoutConnectorTest extends TestCase
 
     public function testResolvesPromiseAfterCancellingTimerWhenWrappedConnectorReturnsPendingPromiseThatResolves()
     {
-        $timer = $this->getMockBuilder('React\EventLoop\TimerInterface')->getMock();
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $timer = $this->createMock(TimerInterface::class);
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('addTimer')->with(5.0, $this->anything())->willReturn($timer);
         $loop->expects($this->once())->method('cancelTimer')->with($timer);
 
         $deferred = new Deferred();
-        $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
+        $connector = $this->createMock(ConnectorInterface::class);
         $connector->expects($this->once())->method('connect')->with('example.com:80')->willReturn($deferred->promise());
 
         $timeout = new TimeoutConnector($connector, 5.0, $loop);
 
         $promise = $timeout->connect('example.com:80');
 
-        $connection = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
+        $connection = $this->createMock(ConnectionInterface::class);
         $deferred->resolve($connection);
 
         $resolved = null;
@@ -125,8 +129,8 @@ class TimeoutConnectorTest extends TestCase
     public function testRejectsPromiseAndCancelsPendingConnectionWhenTimeoutTriggers()
     {
         $timerCallback = null;
-        $timer = $this->getMockBuilder('React\EventLoop\TimerInterface')->getMock();
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $timer = $this->createMock(TimerInterface::class);
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('addTimer')->with(0.01, $this->callback(function ($callback) use (&$timerCallback) {
             $timerCallback = $callback;
             return true;
@@ -134,7 +138,7 @@ class TimeoutConnectorTest extends TestCase
         $loop->expects($this->once())->method('cancelTimer')->with($timer);
 
         $cancelled = 0;
-        $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
+        $connector = $this->createMock(ConnectorInterface::class);
         $connector->expects($this->once())->method('connect')->with('example.com:80')->willReturn(new Promise(function () { }, function () use (&$cancelled) {
             ++$cancelled;
             throw new \RuntimeException();
@@ -163,13 +167,13 @@ class TimeoutConnectorTest extends TestCase
 
     public function testCancellingPromiseWillCancelPendingConnectionAndRejectPromise()
     {
-        $timer = $this->getMockBuilder('React\EventLoop\TimerInterface')->getMock();
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $timer = $this->createMock(TimerInterface::class);
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('addTimer')->with(0.01, $this->anything())->willReturn($timer);
         $loop->expects($this->once())->method('cancelTimer')->with($timer);
 
         $cancelled = 0;
-        $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
+        $connector = $this->createMock(ConnectorInterface::class);
         $connector->expects($this->once())->method('connect')->with('example.com:80')->willReturn(new Promise(function () { }, function () use (&$cancelled) {
             ++$cancelled;
             throw new \RuntimeException('Cancelled');
@@ -206,7 +210,7 @@ class TimeoutConnectorTest extends TestCase
         }
 
         $connection = new Deferred();
-        $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
+        $connector = $this->createMock(ConnectorInterface::class);
         $connector->expects($this->once())->method('connect')->with('example.com:80')->willReturn($connection->promise());
 
         $timeout = new TimeoutConnector($connector, 0.01);
@@ -234,7 +238,7 @@ class TimeoutConnectorTest extends TestCase
         $connection = new Deferred(function () {
             throw new \RuntimeException('Connection cancelled');
         });
-        $connector = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
+        $connector = $this->createMock(ConnectorInterface::class);
         $connector->expects($this->once())->method('connect')->with('example.com:80')->willReturn($connection->promise());
 
         $timeout = new TimeoutConnector($connector, 0);

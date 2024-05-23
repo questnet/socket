@@ -2,6 +2,7 @@
 
 namespace React\Tests\Socket;
 
+use React\EventLoop\LoopInterface;
 use React\Promise\Promise;
 use React\Socket\ConnectionInterface;
 use React\Socket\SocketServer;
@@ -28,7 +29,7 @@ class SocketServerTest extends TestCase
         $ref->setAccessible(true);
         $loop = $ref->getValue($tcp);
 
-        $this->assertInstanceOf('React\EventLoop\LoopInterface', $loop);
+        $this->assertInstanceOf(LoopInterface::class, $loop);
     }
 
     public function testCreateServerWithZeroPortAssignsRandomPort()
@@ -40,31 +41,25 @@ class SocketServerTest extends TestCase
 
     public function testConstructorWithInvalidUriThrows()
     {
-        $this->setExpectedException(
-            'InvalidArgumentException',
-            'Invalid URI "tcp://invalid URI" given (EINVAL)',
-            defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22)
-        );
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid URI "tcp://invalid URI" given (EINVAL)');
+        $this->expectExceptionCode(defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22));
         new SocketServer('invalid URI');
     }
 
     public function testConstructorWithInvalidUriWithPortOnlyThrows()
     {
-        $this->setExpectedException(
-            'InvalidArgumentException',
-            'Invalid URI given (EINVAL)',
-            defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22)
-        );
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid URI given (EINVAL)');
+        $this->expectExceptionCode(defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22));
         new SocketServer('0');
     }
 
     public function testConstructorWithInvalidUriWithSchemaAndPortOnlyThrows()
     {
-        $this->setExpectedException(
-            'InvalidArgumentException',
-            'Invalid URI given (EINVAL)',
-            defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22)
-        );
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid URI given (EINVAL)');
+        $this->expectExceptionCode(defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22));
         new SocketServer('tcp://0');
     }
 

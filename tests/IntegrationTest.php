@@ -26,7 +26,7 @@ class IntegrationTest extends TestCase
         $conn = await($connector->connect('google.com:80'));
         assert($conn instanceof ConnectionInterface);
 
-        $this->assertContainsString(':80', $conn->getRemoteAddress());
+        $this->assertStringContainsString(':80', $conn->getRemoteAddress());
         $this->assertNotEquals('google.com:80', $conn->getRemoteAddress());
 
         $conn->write("GET / HTTP/1.0\r\n\r\n");
@@ -34,7 +34,7 @@ class IntegrationTest extends TestCase
         $response = $this->buffer($conn, self::TIMEOUT);
         assert(!$conn->isReadable());
 
-        $this->assertMatchesRegExp('#^HTTP/1\.0#', $response);
+        $this->assertStringMatchesFormat('HTTP/1.0%a', $response);
     }
 
     /** @test */
@@ -50,7 +50,7 @@ class IntegrationTest extends TestCase
         $response = $this->buffer($conn, self::TIMEOUT);
         assert(!$conn->isReadable());
 
-        $this->assertMatchesRegExp('#^HTTP/1\.0#', $response);
+        $this->assertStringMatchesFormat('HTTP/1.0%a', $response);
     }
 
     /** @test */
@@ -74,7 +74,7 @@ class IntegrationTest extends TestCase
         $response = $this->buffer($conn, self::TIMEOUT);
         assert(!$conn->isReadable());
 
-        $this->assertMatchesRegExp('#^HTTP/1\.0#', $response);
+        $this->assertStringMatchesFormat('HTTP/1.0%a', $response);
     }
 
     /** @test */
@@ -85,7 +85,7 @@ class IntegrationTest extends TestCase
         $conn = await($connector->connect('google.com:443'));
         assert($conn instanceof ConnectionInterface);
 
-        $this->assertContainsString(':443', $conn->getRemoteAddress());
+        $this->assertStringContainsString(':443', $conn->getRemoteAddress());
         $this->assertNotEquals('google.com:443', $conn->getRemoteAddress());
 
         $conn->write("GET / HTTP/1.0\r\n\r\n");
@@ -93,7 +93,7 @@ class IntegrationTest extends TestCase
         $response = $this->buffer($conn, self::TIMEOUT);
         assert(!$conn->isReadable());
 
-        $this->assertDoesNotMatchRegExp('#^HTTP/1\.0#', $response);
+        $this->assertStringNotMatchesFormat('HTTP/1.0%a', $response);
     }
 
     public function testConnectingFailsIfConnectorUsesInvalidDnsResolverAddress()
@@ -109,7 +109,7 @@ class IntegrationTest extends TestCase
             'dns' => $dns
         ]);
 
-        $this->setExpectedException('RuntimeException');
+        $this->expectException(\RuntimeException::class);
         await(timeout($connector->connect('google.com:80'), self::TIMEOUT));
     }
 
@@ -365,7 +365,7 @@ class IntegrationTest extends TestCase
             'timeout' => 0.001
         ]);
 
-        $this->setExpectedException('RuntimeException');
+        $this->expectException(\RuntimeException::class);
         await(timeout($connector->connect('google.com:80'), self::TIMEOUT));
     }
 
@@ -377,7 +377,7 @@ class IntegrationTest extends TestCase
             ]
         ]);
 
-        $this->setExpectedException('RuntimeException');
+        $this->expectException(\RuntimeException::class);
         await(timeout($connector->connect('tls://self-signed.badssl.com:443'), self::TIMEOUT));
     }
 

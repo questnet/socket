@@ -69,7 +69,14 @@ class TestCase extends BaseTestCase
 
     protected function createCallableMock()
     {
-        return $this->getMockBuilder('React\Tests\Socket\Stub\CallableStub')->getMock();
+        $builder = $this->getMockBuilder(\stdClass::class);
+        if (method_exists($builder, 'addMethods')) {
+            // PHPUnit 9+
+            return $builder->addMethods(['__invoke'])->getMock();
+        } else {
+            // legacy PHPUnit
+            return $builder->setMethods(['__invoke'])->getMock();
+        }
     }
 
     protected function buffer(ReadableStreamInterface $stream, $timeout)
@@ -106,17 +113,6 @@ class TestCase extends BaseTestCase
         return $buffer;
     }
 
-    public function setExpectedException($exception, $exceptionMessage = '', $exceptionCode = null)
-    {
-        $this->expectException($exception);
-        if ($exceptionMessage !== '') {
-            $this->expectExceptionMessage($exceptionMessage);
-        }
-        if ($exceptionCode !== null) {
-            $this->expectExceptionCode($exceptionCode);
-        }
-    }
-
     protected function supportsTls13()
     {
         // TLS 1.3 is supported as of OpenSSL 1.1.1 (https://www.openssl.org/blog/blog/2018/09/11/release111/)
@@ -132,38 +128,5 @@ class TestCase extends BaseTestCase
             return version_compare($match[1], '1.1.1', '>=');
         }
         return false;
-    }
-
-    public function assertContainsString($needle, $haystack)
-    {
-        if (method_exists($this, 'assertStringContainsString')) {
-            // PHPUnit 7.5+
-            $this->assertStringContainsString($needle, $haystack);
-        } else {
-            // legacy PHPUnit 4- PHPUnit 7.5
-            $this->assertContains($needle, $haystack);
-        }
-    }
-
-    public function assertMatchesRegExp($pattern, $string)
-    {
-        if (method_exists($this, 'assertMatchesRegularExpression')) {
-            // PHPUnit 10
-            $this->assertMatchesRegularExpression($pattern, $string);
-        } else {
-            // legacy PHPUnit 4 - PHPUnit 9.2
-            $this->assertRegExp($pattern, $string);
-        }
-    }
-
-    public function assertDoesNotMatchRegExp($pattern, $string)
-    {
-        if (method_exists($this, 'assertDoesNotMatchRegularExpression')) {
-            // PHPUnit 10
-            $this->assertDoesNotMatchRegularExpression($pattern, $string);
-        } else {
-            // legacy PHPUnit 4 - PHPUnit 9.2
-            $this->assertNotRegExp($pattern, $string);
-        }
     }
 }

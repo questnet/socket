@@ -30,7 +30,7 @@ class FunctionalConnectorTest extends TestCase
 
         $server->close();
 
-        $this->assertInstanceOf('React\Socket\ConnectionInterface', $connection);
+        $this->assertInstanceOf(ConnectionInterface::class, $connection);
 
         $connection->close();
     }
@@ -149,7 +149,7 @@ class FunctionalConnectorTest extends TestCase
             await(timeout($promise, self::TIMEOUT));
             $this->fail();
         } catch (\Exception $e) {
-            $this->assertInstanceOf('RuntimeException', $e);
+            $this->assertInstanceOf(\RuntimeException::class, $e);
             $this->assertEquals('Connection to ' . $uri . ' cancelled during TLS handshake (ECONNABORTED)', $e->getMessage());
         }
     }
