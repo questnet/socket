@@ -36,11 +36,7 @@ final class Connector implements ConnectorInterface
      * This class takes two optional arguments for more advanced usage:
      *
      * ```php
-     * // constructor signature as of v1.9.0
      * $connector = new React\Socket\Connector(array $context = [], ?LoopInterface $loop = null);
-     *
-     * // legacy constructor signature before v1.9.0
-     * $connector = new React\Socket\Connector(?LoopInterface $loop = null, array $context = []);
      * ```
      *
      * This class takes an optional `LoopInterface|null $loop` parameter that can be used to
@@ -49,23 +45,12 @@ final class Connector implements ConnectorInterface
      * This value SHOULD NOT be given unless you're sure you want to explicitly use a
      * given event loop instance.
      *
-     * @param array|LoopInterface|null $context
-     * @param null|LoopInterface|array $loop
+     * @param array          $context
+     * @param ?LoopInterface $loop
      * @throws \InvalidArgumentException for invalid arguments
      */
-    public function __construct($context = array(), $loop = null)
+    public function __construct(array $context = array(), LoopInterface $loop = null)
     {
-        // swap arguments for legacy constructor signature
-        if (($context instanceof LoopInterface || $context === null) && (\func_num_args() <= 1 || \is_array($loop))) {
-            $swap = $loop === null ? array(): $loop;
-            $loop = $context;
-            $context = $swap;
-        }
-
-        if (!\is_array($context) || ($loop !== null && !$loop instanceof LoopInterface)) {
-            throw new \InvalidArgumentException('Expected "array $context" and "?LoopInterface $loop" arguments');
-        }
-
         // apply default options if not explicitly given
         $context += array(
             'tcp' => true,
