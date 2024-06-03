@@ -4,8 +4,6 @@ namespace React\Socket;
 
 use React\EventLoop\LoopInterface;
 use React\Promise\Deferred;
-use RuntimeException;
-use UnexpectedValueException;
 
 /**
  * This class is considered internal and its API should not be relied upon
@@ -26,19 +24,18 @@ class StreamEncryption
 
         // support TLSv1.0+ by default and exclude legacy SSLv2/SSLv3.
         // As of PHP 7.2+ the main crypto method constant includes all TLS versions.
-        // As of PHP 5.6+ the crypto method is a bitmask, so we explicitly include all TLS versions.
-        // For legacy PHP < 5.6 the crypto method is a single value only and this constant includes all TLS versions.
+        // In prior PHP versions, the crypto method is a bitmask, so we explicitly include all TLS versions.
         // @link https://3v4l.org/9PSST
         if ($server) {
             $this->method = \STREAM_CRYPTO_METHOD_TLS_SERVER;
 
-            if (\PHP_VERSION_ID < 70200 && \PHP_VERSION_ID >= 50600) {
+            if (\PHP_VERSION_ID < 70200) {
                 $this->method |= \STREAM_CRYPTO_METHOD_TLSv1_0_SERVER | \STREAM_CRYPTO_METHOD_TLSv1_1_SERVER | \STREAM_CRYPTO_METHOD_TLSv1_2_SERVER; // @codeCoverageIgnore
             }
         } else {
             $this->method = \STREAM_CRYPTO_METHOD_TLS_CLIENT;
 
-            if (\PHP_VERSION_ID < 70200 && \PHP_VERSION_ID >= 50600) {
+            if (\PHP_VERSION_ID < 70200) {
                 $this->method |= \STREAM_CRYPTO_METHOD_TLSv1_0_CLIENT | \STREAM_CRYPTO_METHOD_TLSv1_1_CLIENT | \STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT; // @codeCoverageIgnore
             }
         }
@@ -74,15 +71,11 @@ class StreamEncryption
         $socket = $stream->stream;
 
         // get crypto method from context options or use global setting from constructor
-        $method = $this->method;
         $context = \stream_context_get_options($socket);
-        if (isset($context['ssl']['crypto_method'])) {
-            $method = $context['ssl']['crypto_method'];
-        }
+        $method = $context['ssl']['crypto_method'] ?? $this->method;
 
-        $that = $this;
-        $toggleCrypto = function () use ($socket, $deferred, $toggle, $method, $that) {
-            $that->toggleCrypto($socket, $deferred, $toggle, $method);
+        $toggleCrypto = function () use ($socket, $deferred, $toggle, $method) {
+            $this->toggleCrypto($socket, $deferred, $toggle, $method);
         };
 
         $this->loop->addReadStream($socket, $toggleCrypto);
@@ -91,17 +84,15 @@ class StreamEncryption
             $toggleCrypto();
         }
 
-        $loop = $this->loop;
-
-        return $deferred->promise()->then(function () use ($stream, $socket, $loop, $toggle) {
-            $loop->removeReadStream($socket);
+        return $deferred->promise()->then(function () use ($stream, $socket, $toggle) {
+            $this->loop->removeReadStream($socket);
 
             $stream->encryptionEnabled = $toggle;
             $stream->resume();
 
             return $stream;
-        }, function($error) use ($stream, $socket, $loop) {
-            $loop->removeReadStream($socket);
+        }, function($error) use ($stream, $socket) {
+            $this->loop->removeReadStream($socket);
             $stream->resume();
             throw $error;
         });
@@ -119,7 +110,7 @@ class StreamEncryption
     {
         $error = null;
         \set_error_handler(function ($_, $errstr) use (&$error) {
-            $error = \str_replace(array("\r", "\n"), ' ', $errstr);
+            $error = \str_replace(["\r", "\n"], ' ', $errstr);
 
             // remove useless function name from error message
             if (($pos = \strpos($error, "): ")) !== false) {

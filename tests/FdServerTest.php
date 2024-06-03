@@ -2,15 +2,18 @@
 
 namespace React\Tests\Socket;
 
+use React\EventLoop\LoopInterface;
 use React\Promise\Promise;
 use React\Socket\ConnectionInterface;
 use React\Socket\FdServer;
+use function React\Async\await;
+use function React\Promise\Timer\timeout;
 
 class FdServerTest extends TestCase
 {
     public function testCtorAddsResourceToLoop()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -18,7 +21,7 @@ class FdServerTest extends TestCase
         $socket = stream_socket_server('127.0.0.1:0');
         assert($socket !== false);
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('addReadStream');
 
         new FdServer($fd, $loop);
@@ -26,39 +29,35 @@ class FdServerTest extends TestCase
 
     public function testCtorThrowsForInvalidFd()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->never())->method('addReadStream');
 
-        $this->setExpectedException(
-            'InvalidArgumentException',
-            'Invalid FD number given (EINVAL)',
-            defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22)
-        );
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid FD number given (EINVAL)');
+        $this->expectExceptionCode(defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22));
         new FdServer(-1, $loop);
     }
 
     public function testCtorThrowsForInvalidUrl()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->never())->method('addReadStream');
 
-        $this->setExpectedException(
-            'InvalidArgumentException',
-            'Invalid FD number given (EINVAL)',
-            defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22)
-        );
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid FD number given (EINVAL)');
+        $this->expectExceptionCode(defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22));
         new FdServer('tcp://127.0.0.1:8080', $loop);
     }
 
     public function testCtorThrowsForUnknownFdWithoutCallingCustomErrorHandler()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
         $fd = self::getNextFreeFd();
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->never())->method('addReadStream');
 
         $error = null;
@@ -66,11 +65,9 @@ class FdServerTest extends TestCase
             $error = $errstr;
         });
 
-        $this->setExpectedException(
-            'RuntimeException',
-            'Failed to listen on FD ' . $fd . ': ' . (function_exists('socket_strerror') ? socket_strerror(SOCKET_EBADF) . ' (EBADF)' : 'Bad file descriptor'),
-            defined('SOCKET_EBADF') ? SOCKET_EBADF : 9
-        );
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Failed to listen on FD ' . $fd . ': ' . (function_exists('socket_strerror') ? socket_strerror(SOCKET_EBADF) . ' (EBADF)' : 'Bad file descriptor'));
+        $this->expectExceptionCode(defined('SOCKET_EBADF') ? SOCKET_EBADF : 9);
 
         try {
             new FdServer($fd, $loop);
@@ -86,7 +83,7 @@ class FdServerTest extends TestCase
 
     public function testCtorThrowsIfFdIsAFileAndNotASocket()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -94,20 +91,18 @@ class FdServerTest extends TestCase
         $tmpfile = tmpfile();
         assert($tmpfile !== false);
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->never())->method('addReadStream');
 
-        $this->setExpectedException(
-            'RuntimeException',
-            'Failed to listen on FD ' . $fd . ': ' . (function_exists('socket_strerror') ? socket_strerror(SOCKET_ENOTSOCK) : 'Not a socket') . ' (ENOTSOCK)',
-            defined('SOCKET_ENOTSOCK') ? SOCKET_ENOTSOCK : 88
-        );
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Failed to listen on FD ' . $fd . ': ' . (function_exists('socket_strerror') ? socket_strerror(SOCKET_ENOTSOCK) : 'Not a socket') . ' (ENOTSOCK)');
+        $this->expectExceptionCode(defined('SOCKET_ENOTSOCK') ? SOCKET_ENOTSOCK : 88);
         new FdServer($fd, $loop);
     }
 
     public function testCtorThrowsIfFdIsAConnectedSocketInsteadOfServerSocket()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -117,27 +112,25 @@ class FdServerTest extends TestCase
         $client = stream_socket_client('tcp://' . stream_socket_get_name($socket, false));
         assert($client !== false);
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->never())->method('addReadStream');
 
-        $this->setExpectedException(
-            'RuntimeException',
-            'Failed to listen on FD ' . $fd . ': ' . (function_exists('socket_strerror') ? socket_strerror(SOCKET_EISCONN) : 'Socket is connected') . ' (EISCONN)',
-            defined('SOCKET_EISCONN') ? SOCKET_EISCONN : 106
-        );
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Failed to listen on FD ' . $fd . ': ' . (function_exists('socket_strerror') ? socket_strerror(SOCKET_EISCONN) : 'Socket is connected') . ' (EISCONN)');
+        $this->expectExceptionCode(defined('SOCKET_EISCONN') ? SOCKET_EISCONN : 106);
         new FdServer($fd, $loop);
     }
 
     public function testGetAddressReturnsSameAddressAsOriginalSocketForIpv4Socket()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
         $fd = self::getNextFreeFd();
         $socket = stream_socket_server('127.0.0.1:0');
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
 
         $server = new FdServer($fd, $loop);
 
@@ -146,14 +139,14 @@ class FdServerTest extends TestCase
 
     public function testGetAddressReturnsSameAddressAsOriginalSocketForIpv4SocketGivenAsUrlToFd()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
         $fd = self::getNextFreeFd();
         $socket = stream_socket_server('127.0.0.1:0');
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
 
         $server = new FdServer('php://fd/' . $fd, $loop);
 
@@ -162,7 +155,7 @@ class FdServerTest extends TestCase
 
     public function testGetAddressReturnsSameAddressAsOriginalSocketForIpv6Socket()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -172,7 +165,7 @@ class FdServerTest extends TestCase
             $this->markTestSkipped('Listening on IPv6 not supported');
         }
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
 
         $server = new FdServer($fd, $loop);
 
@@ -182,7 +175,7 @@ class FdServerTest extends TestCase
 
     public function testGetAddressReturnsSameAddressAsOriginalSocketForUnixDomainSocket()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -195,7 +188,7 @@ class FdServerTest extends TestCase
         assert(is_resource($socket));
         unlink(str_replace('unix://', '', stream_socket_get_name($socket, false)));
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
 
         $server = new FdServer($fd, $loop);
 
@@ -204,7 +197,7 @@ class FdServerTest extends TestCase
 
     public function testGetAddressReturnsNullAfterClose()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -212,7 +205,7 @@ class FdServerTest extends TestCase
         $socket = stream_socket_server('127.0.0.1:0');
         assert($socket !== false);
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
 
         $server = new FdServer($fd, $loop);
         $server->close();
@@ -222,7 +215,7 @@ class FdServerTest extends TestCase
 
     public function testCloseRemovesResourceFromLoop()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -230,7 +223,7 @@ class FdServerTest extends TestCase
         $socket = stream_socket_server('127.0.0.1:0');
         assert($socket !== false);
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('removeReadStream');
 
         $server = new FdServer($fd, $loop);
@@ -239,7 +232,7 @@ class FdServerTest extends TestCase
 
     public function testCloseTwiceRemovesResourceFromLoopOnce()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -247,7 +240,7 @@ class FdServerTest extends TestCase
         $socket = stream_socket_server('127.0.0.1:0');
         assert($socket !== false);
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('removeReadStream');
 
         $server = new FdServer($fd, $loop);
@@ -257,7 +250,7 @@ class FdServerTest extends TestCase
 
     public function testResumeWithoutPauseIsNoOp()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -265,7 +258,7 @@ class FdServerTest extends TestCase
         $socket = stream_socket_server('127.0.0.1:0');
         assert($socket !== false);
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('addReadStream');
 
         $server = new FdServer($fd, $loop);
@@ -274,7 +267,7 @@ class FdServerTest extends TestCase
 
     public function testPauseRemovesResourceFromLoop()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -282,7 +275,7 @@ class FdServerTest extends TestCase
         $socket = stream_socket_server('127.0.0.1:0');
         assert($socket !== false);
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('removeReadStream');
 
         $server = new FdServer($fd, $loop);
@@ -291,7 +284,7 @@ class FdServerTest extends TestCase
 
     public function testPauseAfterPauseIsNoOp()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -299,7 +292,7 @@ class FdServerTest extends TestCase
         $socket = stream_socket_server('127.0.0.1:0');
         assert($socket !== false);
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('removeReadStream');
 
         $server = new FdServer($fd, $loop);
@@ -309,7 +302,7 @@ class FdServerTest extends TestCase
 
     public function testServerEmitsConnectionEventForNewConnection()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
@@ -324,12 +317,12 @@ class FdServerTest extends TestCase
             $server->on('connection', $resolve);
         });
 
-        $connection = \React\Async\await(\React\Promise\Timer\timeout($promise, 1.0));
+        $connection = await(timeout($promise, 1.0));
 
         /**
          * @var ConnectionInterface $connection
          */
-        $this->assertInstanceOf('React\Socket\ConnectionInterface', $connection);
+        $this->assertInstanceOf(ConnectionInterface::class, $connection);
 
         fclose($client);
         $connection->close();
@@ -338,12 +331,12 @@ class FdServerTest extends TestCase
 
     public function testEmitsErrorWhenAcceptListenerFailsWithoutCallingCustomErrorHandler()
     {
-        if (!is_dir('/dev/fd') || defined('HHVM_VERSION')) {
+        if (!is_dir('/dev/fd')) {
             $this->markTestSkipped('Not supported on your platform');
         }
 
         $listener = null;
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('addReadStream')->with($this->anything(), $this->callback(function ($cb) use (&$listener) {
             $listener = $cb;
             return true;
@@ -377,7 +370,7 @@ class FdServerTest extends TestCase
 
         $this->assertLessThan(1, $time);
 
-        $this->assertInstanceOf('RuntimeException', $exception);
+        $this->assertInstanceOf(\RuntimeException::class, $exception);
         assert($exception instanceof \RuntimeException);
         $this->assertStringStartsWith('Unable to accept new connection: ', $exception->getMessage());
 

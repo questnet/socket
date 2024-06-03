@@ -4,18 +4,17 @@ namespace React\Socket;
 
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
-use React\Promise;
-use InvalidArgumentException;
-use RuntimeException;
+use React\Promise\Promise;
+use function React\Promise\reject;
 
 final class TcpConnector implements ConnectorInterface
 {
     private $loop;
     private $context;
 
-    public function __construct(LoopInterface $loop = null, array $context = array())
+    public function __construct(LoopInterface $loop = null, array $context = [])
     {
-        $this->loop = $loop ?: Loop::get();
+        $this->loop = $loop ?? Loop::get();
         $this->context = $context;
     }
 
@@ -27,7 +26,7 @@ final class TcpConnector implements ConnectorInterface
 
         $parts = \parse_url($uri);
         if (!$parts || !isset($parts['scheme'], $parts['host'], $parts['port']) || $parts['scheme'] !== 'tcp') {
-            return Promise\reject(new \InvalidArgumentException(
+            return reject(new \InvalidArgumentException(
                 'Given URI "' . $uri . '" is invalid (EINVAL)',
                 \defined('SOCKET_EINVAL') ? \SOCKET_EINVAL : (\defined('PCNTL_EINVAL') ? \PCNTL_EINVAL : 22)
             ));
@@ -35,19 +34,19 @@ final class TcpConnector implements ConnectorInterface
 
         $ip = \trim($parts['host'], '[]');
         if (@\inet_pton($ip) === false) {
-            return Promise\reject(new \InvalidArgumentException(
+            return reject(new \InvalidArgumentException(
                 'Given URI "' . $uri . '" does not contain a valid host IP (EINVAL)',
                 \defined('SOCKET_EINVAL') ? \SOCKET_EINVAL : (\defined('PCNTL_EINVAL') ? \PCNTL_EINVAL : 22)
             ));
         }
 
         // use context given in constructor
-        $context = array(
+        $context = [
             'socket' => $this->context
-        );
+        ];
 
         // parse arguments from query component of URI
-        $args = array();
+        $args = [];
         if (isset($parts['query'])) {
             \parse_str($parts['query'], $args);
         }
@@ -58,26 +57,13 @@ final class TcpConnector implements ConnectorInterface
         // These context options are here in case TLS is enabled later on this stream.
         // If TLS is not enabled later, this doesn't hurt either.
         if (isset($args['hostname'])) {
-            $context['ssl'] = array(
+            $context['ssl'] = [
                 'SNI_enabled' => true,
                 'peer_name' => $args['hostname']
-            );
-
-            // Legacy PHP < 5.6 ignores peer_name and requires legacy context options instead.
-            // The SNI_server_name context option has to be set here during construction,
-            // as legacy PHP ignores any values set later.
-            // @codeCoverageIgnoreStart
-            if (\PHP_VERSION_ID < 50600) {
-                $context['ssl'] += array(
-                    'SNI_server_name' => $args['hostname'],
-                    'CN_match' => $args['hostname']
-                );
-            }
-            // @codeCoverageIgnoreEnd
+            ];
         }
 
-        // latest versions of PHP no longer accept any other URI components and
-        // HHVM fails to parse URIs with a query but no path, so let's simplify our URI here
+        // PHP 7.1.4 does not accept any other URI components (such as a query with no path), so let's simplify our URI here
         $remote = 'tcp://' . $parts['host'] . ':' . $parts['port'];
 
         $stream = @\stream_socket_client(
@@ -90,17 +76,16 @@ final class TcpConnector implements ConnectorInterface
         );
 
         if (false === $stream) {
-            return Promise\reject(new \RuntimeException(
+            return reject(new \RuntimeException(
                 'Connection to ' . $uri . ' failed: ' . $errstr . SocketServer::errconst($errno),
                 $errno
             ));
         }
 
         // wait for connection
-        $loop = $this->loop;
-        return new Promise\Promise(function ($resolve, $reject) use ($loop, $stream, $uri) {
-            $loop->addWriteStream($stream, function ($stream) use ($loop, $resolve, $reject, $uri) {
-                $loop->removeWriteStream($stream);
+        return new Promise(function ($resolve, $reject) use ($stream, $uri) {
+            $this->loop->addWriteStream($stream, function ($stream) use ($resolve, $reject, $uri) {
+                $this->loop->removeWriteStream($stream);
 
                 // The following hack looks like the only way to
                 // detect connection refused errors with PHP's stream sockets.
@@ -108,7 +93,7 @@ final class TcpConnector implements ConnectorInterface
                     // If we reach this point, we know the connection is dead, but we don't know the underlying error condition.
                     // @codeCoverageIgnoreStart
                     if (\function_exists('socket_import_stream')) {
-                        // actual socket errno and errstr can be retrieved with ext-sockets on PHP 5.4+
+                        // actual socket errno and errstr can be retrieved with ext-sockets
                         $socket = \socket_import_stream($stream);
                         $errno = \socket_get_option($socket, \SOL_SOCKET, \SO_ERROR);
                         $errstr = \socket_strerror($errno);
@@ -122,8 +107,8 @@ final class TcpConnector implements ConnectorInterface
                             // Match errstr from PHP's warning message.
                             // fwrite(): send of 1 bytes failed with errno=111 Connection refused
                             \preg_match('/errno=(\d+) (.+)/', $error, $m);
-                            $errno = isset($m[1]) ? (int) $m[1] : 0;
-                            $errstr = isset($m[2]) ? $m[2] : $error;
+                            $errno = (int) ($m[1] ?? 0);
+                            $errstr = $m[2] ?? $error;
                         });
 
                         \fwrite($stream, \PHP_EOL);
@@ -142,19 +127,12 @@ final class TcpConnector implements ConnectorInterface
                         $errno
                     ));
                 } else {
-                    $resolve(new Connection($stream, $loop));
+                    $resolve(new Connection($stream, $this->loop));
                 }
             });
-        }, function () use ($loop, $stream, $uri) {
-            $loop->removeWriteStream($stream);
+        }, function () use ($stream, $uri) {
+            $this->loop->removeWriteStream($stream);
             \fclose($stream);
-
-            // @codeCoverageIgnoreStart
-            // legacy PHP 5.3 sometimes requires a second close call (see tests)
-            if (\PHP_VERSION_ID < 50400 && \is_resource($stream)) {
-                \fclose($stream);
-            }
-            // @codeCoverageIgnoreEnd
 
             throw new \RuntimeException(
                 'Connection to ' . $uri . ' cancelled during TCP/IP handshake (ECONNABORTED)',

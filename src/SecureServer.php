@@ -5,8 +5,6 @@ namespace React\Socket;
 use Evenement\EventEmitter;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
-use BadMethodCallException;
-use UnexpectedValueException;
 
 /**
  * The `SecureServer` class implements the `ServerInterface` and is responsible
@@ -17,9 +15,9 @@ use UnexpectedValueException;
  *
  * ```php
  * $server = new React\Socket\TcpServer(8000);
- * $server = new React\Socket\SecureServer($server, null, array(
+ * $server = new React\Socket\SecureServer($server, null, [
  *     // tls context options here…
- * ));
+ * ]);
  * ```
  *
  * Whenever a client completes the TLS handshake, it will emit a `connection` event
@@ -69,9 +67,9 @@ final class SecureServer extends EventEmitter implements ServerInterface
      *
      * ```php
      * $server = new React\Socket\TcpServer(8000);
-     * $server = new React\Socket\SecureServer($server, null, array(
+     * $server = new React\Socket\SecureServer($server, null, [
      *     'local_cert' => 'server.pem'
-     * ));
+     * ]);
      * ```
      *
      * Note that the certificate file will not be loaded on instantiation but when an
@@ -84,10 +82,10 @@ final class SecureServer extends EventEmitter implements ServerInterface
      *
      * ```php
      * $server = new React\Socket\TcpServer(8000);
-     * $server = new React\Socket\SecureServer($server, null, array(
+     * $server = new React\Socket\SecureServer($server, null, [
      *     'local_cert' => 'server.pem',
      *     'passphrase' => 'secret'
-     * ));
+     * ]);
      * ```
      *
      * Note that available [TLS context options],
@@ -118,31 +116,25 @@ final class SecureServer extends EventEmitter implements ServerInterface
      * @param ServerInterface|TcpServer $tcp
      * @param ?LoopInterface $loop
      * @param array $context
-     * @throws BadMethodCallException for legacy HHVM < 3.8 due to lack of support
      * @see TcpServer
      * @link https://www.php.net/manual/en/context.ssl.php for TLS context options
      */
-    public function __construct(ServerInterface $tcp, LoopInterface $loop = null, array $context = array())
+    public function __construct(ServerInterface $tcp, LoopInterface $loop = null, array $context = [])
     {
-        if (!\function_exists('stream_socket_enable_crypto')) {
-            throw new \BadMethodCallException('Encryption not supported on your platform (HHVM < 3.8?)'); // @codeCoverageIgnore
-        }
-
         // default to empty passphrase to suppress blocking passphrase prompt
-        $context += array(
+        $context += [
             'passphrase' => ''
-        );
+        ];
 
         $this->tcp = $tcp;
-        $this->encryption = new StreamEncryption($loop ?: Loop::get());
+        $this->encryption = new StreamEncryption($loop ?? Loop::get());
         $this->context = $context;
 
-        $that = $this;
-        $this->tcp->on('connection', function ($connection) use ($that) {
-            $that->handleConnection($connection);
+        $this->tcp->on('connection', function ($connection) {
+            $this->handleConnection($connection);
         });
-        $this->tcp->on('error', function ($error) use ($that) {
-            $that->emit('error', array($error));
+        $this->tcp->on('error', function ($error) {
+            $this->emit('error', [$error]);
         });
     }
 
@@ -175,7 +167,7 @@ final class SecureServer extends EventEmitter implements ServerInterface
     public function handleConnection(ConnectionInterface $connection)
     {
         if (!$connection instanceof Connection) {
-            $this->emit('error', array(new \UnexpectedValueException('Base server does not use internal Connection class exposing stream resource')));
+            $this->emit('error', [new \UnexpectedValueException('Base server does not use internal Connection class exposing stream resource')]);
             $connection->close();
             return;
         }
@@ -186,19 +178,18 @@ final class SecureServer extends EventEmitter implements ServerInterface
 
         // get remote address before starting TLS handshake in case connection closes during handshake
         $remote = $connection->getRemoteAddress();
-        $that = $this;
 
         $this->encryption->enable($connection)->then(
-            function ($conn) use ($that) {
-                $that->emit('connection', array($conn));
+            function ($conn) {
+                $this->emit('connection', [$conn]);
             },
-            function ($error) use ($that, $connection, $remote) {
+            function ($error) use ($connection, $remote) {
                 $error = new \RuntimeException(
                     'Connection from ' . $remote . ' failed during TLS handshake: ' . $error->getMessage(),
                     $error->getCode()
                 );
 
-                $that->emit('error', array($error));
+                $this->emit('error', [$error]);
                 $connection->close();
             }
         );

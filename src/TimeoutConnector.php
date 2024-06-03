@@ -16,26 +16,24 @@ final class TimeoutConnector implements ConnectorInterface
     {
         $this->connector = $connector;
         $this->timeout = $timeout;
-        $this->loop = $loop ?: Loop::get();
+        $this->loop = $loop ?? Loop::get();
     }
 
     public function connect($uri)
     {
         $promise = $this->connector->connect($uri);
 
-        $loop = $this->loop;
-        $time = $this->timeout;
-        return new Promise(function ($resolve, $reject) use ($loop, $time, $promise, $uri) {
+        return new Promise(function ($resolve, $reject) use ($promise, $uri) {
             $timer = null;
-            $promise = $promise->then(function ($v) use (&$timer, $loop, $resolve) {
+            $promise = $promise->then(function ($v) use (&$timer, $resolve) {
                 if ($timer) {
-                    $loop->cancelTimer($timer);
+                    $this->loop->cancelTimer($timer);
                 }
                 $timer = false;
                 $resolve($v);
-            }, function ($v) use (&$timer, $loop, $reject) {
+            }, function ($v) use (&$timer, $reject) {
                 if ($timer) {
-                    $loop->cancelTimer($timer);
+                    $this->loop->cancelTimer($timer);
                 }
                 $timer = false;
                 $reject($v);
@@ -47,9 +45,9 @@ final class TimeoutConnector implements ConnectorInterface
             }
 
             // start timeout timer which will cancel the pending promise
-            $timer = $loop->addTimer($time, function () use ($time, &$promise, $reject, $uri) {
+            $timer = $this->loop->addTimer($this->timeout, function () use (&$promise, $reject, $uri) {
                 $reject(new \RuntimeException(
-                    'Connection to ' . $uri . ' timed out after ' . $time . ' seconds (ETIMEDOUT)',
+                    'Connection to ' . $uri . ' timed out after ' . $this->timeout . ' seconds (ETIMEDOUT)',
                     \defined('SOCKET_ETIMEDOUT') ? \SOCKET_ETIMEDOUT : 110
                 ));
 

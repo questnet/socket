@@ -3,8 +3,9 @@
 namespace React\Socket;
 
 use React\Dns\Resolver\ResolverInterface;
-use React\Promise;
+use React\Promise\Promise;
 use React\Promise\PromiseInterface;
+use function React\Promise\reject;
 
 final class DnsConnector implements ConnectorInterface
 {
@@ -31,30 +32,29 @@ final class DnsConnector implements ConnectorInterface
         }
 
         if (!$parts || !isset($parts['host'])) {
-            return Promise\reject(new \InvalidArgumentException(
+            return reject(new \InvalidArgumentException(
                 'Given URI "' . $original . '" is invalid (EINVAL)',
                 \defined('SOCKET_EINVAL') ? \SOCKET_EINVAL : (\defined('PCNTL_EINVAL') ? \PCNTL_EINVAL : 22)
             ));
         }
 
         $host = \trim($parts['host'], '[]');
-        $connector = $this->connector;
 
         // skip DNS lookup / URI manipulation if this URI already contains an IP
         if (@\inet_pton($host) !== false) {
-            return $connector->connect($original);
+            return $this->connector->connect($original);
         }
 
         $promise = $this->resolver->resolve($host);
         $resolved = null;
 
-        return new Promise\Promise(
-            function ($resolve, $reject) use (&$promise, &$resolved, $uri, $connector, $host, $parts) {
+        return new Promise(
+            function ($resolve, $reject) use (&$promise, &$resolved, $uri, $host, $parts) {
                 // resolve/reject with result of DNS lookup
-                $promise->then(function ($ip) use (&$promise, &$resolved, $uri, $connector, $host, $parts) {
+                $promise->then(function ($ip) use (&$promise, &$resolved, $uri, $host, $parts) {
                     $resolved = $ip;
 
-                    return $promise = $connector->connect(
+                    return $promise = $this->connector->connect(
                         Connector::uri($parts, $host, $ip)
                     )->then(null, function (\Exception $e) use ($uri) {
                         if ($e instanceof \RuntimeException) {
@@ -67,7 +67,7 @@ final class DnsConnector implements ConnectorInterface
 
                             // avoid garbage references by replacing all closures in call stack.
                             // what a lovely piece of code!
-                            $r = new \ReflectionProperty('Exception', 'trace');
+                            $r = new \ReflectionProperty(\Exception::class, 'trace');
                             $r->setAccessible(true);
                             $trace = $r->getValue($e);
 

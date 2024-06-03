@@ -2,6 +2,7 @@
 
 namespace React\Tests\Socket;
 
+use React\EventLoop\LoopInterface;
 use React\Socket\ConnectionInterface;
 use React\Socket\UnixConnector;
 
@@ -15,7 +16,7 @@ class UnixConnectorTest extends TestCase
      */
     public function setUpConnector()
     {
-        $this->loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $this->loop = $this->createMock(LoopInterface::class);
         $this->connector = new UnixConnector($this->loop);
     }
 
@@ -27,7 +28,7 @@ class UnixConnectorTest extends TestCase
         $ref->setAccessible(true);
         $loop = $ref->getValue($connector);
 
-        $this->assertInstanceOf('React\EventLoop\LoopInterface', $loop);
+        $this->assertInstanceOf(LoopInterface::class, $loop);
     }
 
     public function testInvalid()
@@ -35,7 +36,7 @@ class UnixConnectorTest extends TestCase
         $promise = $this->connector->connect('google.com:80');
 
         $promise->then(null, $this->expectCallableOnceWithException(
-            'RuntimeException'
+            \RuntimeException::class
         ));
     }
 
@@ -44,7 +45,7 @@ class UnixConnectorTest extends TestCase
         $promise = $this->connector->connect('tcp://google.com:80');
 
         $promise->then(null, $this->expectCallableOnceWithException(
-            'InvalidArgumentException',
+            \InvalidArgumentException::class,
             'Given URI "tcp://google.com:80" is invalid (EINVAL)',
             defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22)
         ));

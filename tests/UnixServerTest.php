@@ -3,8 +3,11 @@
 namespace React\Tests\Socket;
 
 use React\EventLoop\Loop;
+use React\EventLoop\LoopInterface;
 use React\Socket\UnixServer;
 use React\Stream\DuplexResourceStream;
+use function React\Async\await;
+use function React\Promise\Timer\sleep;
 
 class UnixServerTest extends TestCase
 {
@@ -40,7 +43,7 @@ class UnixServerTest extends TestCase
         $ref->setAccessible(true);
         $loop = $ref->getValue($server);
 
-        $this->assertInstanceOf('React\EventLoop\LoopInterface', $loop);
+        $this->assertInstanceOf(LoopInterface::class, $loop);
 
         $server->close();
     }
@@ -239,7 +242,7 @@ class UnixServerTest extends TestCase
         unlink(str_replace('unix://', '', $this->uds));
         $this->uds = $this->getRandomSocketUri();
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('addReadStream');
 
         new UnixServer($this->uds, $loop);
@@ -247,26 +250,24 @@ class UnixServerTest extends TestCase
 
     public function testCtorThrowsForInvalidAddressScheme()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
 
-        $this->setExpectedException(
-            'InvalidArgumentException',
-            'Given URI "tcp://localhost:0" is invalid (EINVAL)',
-            defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22)
-        );
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Given URI "tcp://localhost:0" is invalid (EINVAL)');
+        $this->expectExceptionCode(defined('SOCKET_EINVAL') ? SOCKET_EINVAL : (defined('PCNTL_EINVAL') ? PCNTL_EINVAL : 22));
         new UnixServer('tcp://localhost:0', $loop);
     }
 
     public function testCtorThrowsWhenPathIsNotWritableWithoutCallingCustomErrorHandler()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
 
         $error = null;
         set_error_handler(function ($_, $errstr) use (&$error) {
             $error = $errstr;
         });
 
-        $this->setExpectedException('RuntimeException');
+        $this->expectException(\RuntimeException::class);
 
         try {
             new UnixServer('/dev/null', $loop);
@@ -285,7 +286,7 @@ class UnixServerTest extends TestCase
         unlink(str_replace('unix://', '', $this->uds));
         $this->uds = $this->getRandomSocketUri();
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('addReadStream');
 
         $server = new UnixServer($this->uds, $loop);
@@ -297,7 +298,7 @@ class UnixServerTest extends TestCase
         unlink(str_replace('unix://', '', $this->uds));
         $this->uds = $this->getRandomSocketUri();
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('removeReadStream');
 
         $server = new UnixServer($this->uds, $loop);
@@ -309,7 +310,7 @@ class UnixServerTest extends TestCase
         unlink(str_replace('unix://', '', $this->uds));
         $this->uds = $this->getRandomSocketUri();
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('removeReadStream');
 
         $server = new UnixServer($this->uds, $loop);
@@ -322,7 +323,7 @@ class UnixServerTest extends TestCase
         unlink(str_replace('unix://', '', $this->uds));
         $this->uds = $this->getRandomSocketUri();
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('removeReadStream');
 
         $server = new UnixServer($this->uds, $loop);
@@ -335,7 +336,7 @@ class UnixServerTest extends TestCase
         $this->uds = $this->getRandomSocketUri();
 
         $listener = null;
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('addReadStream')->with($this->anything(), $this->callback(function ($cb) use (&$listener) {
             $listener = $cb;
             return true;
@@ -365,7 +366,7 @@ class UnixServerTest extends TestCase
 
         $this->assertLessThan(1, $time);
 
-        $this->assertInstanceOf('RuntimeException', $exception);
+        $this->assertInstanceOf(\RuntimeException::class, $exception);
         assert($exception instanceof \RuntimeException);
         $this->assertStringStartsWith('Unable to accept new connection: ', $exception->getMessage());
 
@@ -379,10 +380,6 @@ class UnixServerTest extends TestCase
      */
     public function testEmitsTimeoutErrorWhenAcceptListenerFails(\RuntimeException $exception)
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestSkipped('not supported on HHVM');
-        }
-
         $this->assertEquals('Unable to accept new connection: ' . socket_strerror(SOCKET_ETIMEDOUT) . ' (ETIMEDOUT)', $exception->getMessage());
         $this->assertEquals(SOCKET_ETIMEDOUT, $exception->getCode());
     }
@@ -393,7 +390,7 @@ class UnixServerTest extends TestCase
             $this->markTestSkipped('Windows supports listening on same port multiple times');
         }
 
-        $this->setExpectedException('RuntimeException');
+        $this->expectException(\RuntimeException::class);
         new UnixServer($this->uds);
     }
 
@@ -419,6 +416,6 @@ class UnixServerTest extends TestCase
 
     private function tick()
     {
-        \React\Async\await(\React\Promise\Timer\sleep(0.0));
+        await(sleep(0.0));
     }
 }

@@ -5,10 +5,13 @@ namespace React\Tests\Socket;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use React\Promise\Promise;
 use React\Stream\ReadableStreamInterface;
+use function React\Async\await;
+use function React\Promise\Timer\sleep;
+use function React\Promise\Timer\timeout;
 
 class TestCase extends BaseTestCase
 {
-    public function expectCallableExactly($amount)
+    protected function expectCallableExactly($amount)
     {
         $mock = $this->createCallableMock();
         $mock
@@ -66,7 +69,14 @@ class TestCase extends BaseTestCase
 
     protected function createCallableMock()
     {
-        return $this->getMockBuilder('React\Tests\Socket\Stub\CallableStub')->getMock();
+        $builder = $this->getMockBuilder(\stdClass::class);
+        if (method_exists($builder, 'addMethods')) {
+            // PHPUnit 9+
+            return $builder->addMethods(['__invoke'])->getMock();
+        } else {
+            // legacy PHPUnit
+            return $builder->setMethods(['__invoke'])->getMock();
+        }
     }
 
     protected function buffer(ReadableStreamInterface $stream, $timeout)
@@ -75,7 +85,7 @@ class TestCase extends BaseTestCase
             return '';
         }
 
-        $buffer = \React\Async\await(\React\Promise\Timer\timeout(new Promise(
+        $buffer = await(timeout(new Promise(
             function ($resolve, $reject) use ($stream) {
                 $buffer = '';
                 $stream->on('data', function ($chunk) use (&$buffer) {
@@ -97,27 +107,10 @@ class TestCase extends BaseTestCase
         // let loop tick for reactphp/async v4 to clean up any remaining stream resources
         // @link https://github.com/reactphp/async/pull/65 reported upstream // TODO remove me once merged
         if (function_exists('React\Async\async')) {
-            \React\Async\await(\React\Promise\Timer\sleep(0));
+            await(sleep(0));
         }
 
         return $buffer;
-    }
-
-    public function setExpectedException($exception, $exceptionMessage = '', $exceptionCode = null)
-    {
-        if (method_exists($this, 'expectException')) {
-            // PHPUnit 5+
-            $this->expectException($exception);
-            if ($exceptionMessage !== '') {
-                $this->expectExceptionMessage($exceptionMessage);
-            }
-            if ($exceptionCode !== null) {
-                $this->expectExceptionCode($exceptionCode);
-            }
-        } else {
-            // legacy PHPUnit 4
-            parent::setExpectedException($exception, $exceptionMessage, $exceptionCode);
-        }
     }
 
     protected function supportsTls13()
@@ -136,38 +129,4 @@ class TestCase extends BaseTestCase
         }
         return false;
     }
-
-    public function assertContainsString($needle, $haystack)
-    {
-        if (method_exists($this, 'assertStringContainsString')) {
-            // PHPUnit 7.5+
-            $this->assertStringContainsString($needle, $haystack);
-        } else {
-            // legacy PHPUnit 4- PHPUnit 7.5
-            $this->assertContains($needle, $haystack);
-        }
-    }
-
-    public function assertMatchesRegExp($pattern, $string)
-    {
-        if (method_exists($this, 'assertMatchesRegularExpression')) {
-            // PHPUnit 10
-            $this->assertMatchesRegularExpression($pattern, $string);
-        } else {
-            // legacy PHPUnit 4 - PHPUnit 9.2
-            $this->assertRegExp($pattern, $string);
-        }
-    }
-
-    public function assertDoesNotMatchRegExp($pattern, $string)
-    {
-        if (method_exists($this, 'assertDoesNotMatchRegularExpression')) {
-            // PHPUnit 10
-            $this->assertDoesNotMatchRegularExpression($pattern, $string);
-        } else {
-            // legacy PHPUnit 4 - PHPUnit 9.2
-            $this->assertNotRegExp($pattern, $string);
-        }
-    }
-
 }

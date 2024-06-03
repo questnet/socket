@@ -2,25 +2,21 @@
 
 namespace React\Tests\Socket;
 
-use React\Socket\SecureServer;
-use React\Socket\TcpServer;
+use React\EventLoop\LoopInterface;
 use React\Promise\Promise;
+use React\Socket\Connection;
+use React\Socket\ConnectionInterface;
+use React\Socket\SecureServer;
+use React\Socket\ServerInterface;
+use React\Socket\StreamEncryption;
+use React\Socket\TcpServer;
+use function React\Promise\reject;
 
 class SecureServerTest extends TestCase
 {
-    /**
-     * @before
-     */
-    public function setUpSkipTest()
-    {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestSkipped('Not supported on legacy HHVM');
-        }
-    }
-
     public function testConstructWithoutLoopAssignsLoopAutomatically()
     {
-        $tcp = $this->getMockBuilder('React\Socket\ServerInterface')->getMock();
+        $tcp = $this->createMock(ServerInterface::class);
 
         $server = new SecureServer($tcp);
 
@@ -32,100 +28,100 @@ class SecureServerTest extends TestCase
         $ref->setAccessible(true);
         $loop = $ref->getValue($encryption);
 
-        $this->assertInstanceOf('React\EventLoop\LoopInterface', $loop);
+        $this->assertInstanceOf(LoopInterface::class, $loop);
     }
 
     public function testGetAddressWillBePassedThroughToTcpServer()
     {
-        $tcp = $this->getMockBuilder('React\Socket\ServerInterface')->getMock();
+        $tcp = $this->createMock(ServerInterface::class);
         $tcp->expects($this->once())->method('getAddress')->willReturn('tcp://127.0.0.1:1234');
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
 
-        $server = new SecureServer($tcp, $loop, array());
+        $server = new SecureServer($tcp, $loop, []);
 
         $this->assertEquals('tls://127.0.0.1:1234', $server->getAddress());
     }
 
     public function testGetAddressWillReturnNullIfTcpServerReturnsNull()
     {
-        $tcp = $this->getMockBuilder('React\Socket\ServerInterface')->getMock();
+        $tcp = $this->createMock(ServerInterface::class);
         $tcp->expects($this->once())->method('getAddress')->willReturn(null);
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
 
-        $server = new SecureServer($tcp, $loop, array());
+        $server = new SecureServer($tcp, $loop, []);
 
         $this->assertNull($server->getAddress());
     }
 
     public function testPauseWillBePassedThroughToTcpServer()
     {
-        $tcp = $this->getMockBuilder('React\Socket\ServerInterface')->getMock();
+        $tcp = $this->createMock(ServerInterface::class);
         $tcp->expects($this->once())->method('pause');
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
 
-        $server = new SecureServer($tcp, $loop, array());
+        $server = new SecureServer($tcp, $loop, []);
 
         $server->pause();
     }
 
     public function testResumeWillBePassedThroughToTcpServer()
     {
-        $tcp = $this->getMockBuilder('React\Socket\ServerInterface')->getMock();
+        $tcp = $this->createMock(ServerInterface::class);
         $tcp->expects($this->once())->method('resume');
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
 
-        $server = new SecureServer($tcp, $loop, array());
+        $server = new SecureServer($tcp, $loop, []);
 
         $server->resume();
     }
 
     public function testCloseWillBePassedThroughToTcpServer()
     {
-        $tcp = $this->getMockBuilder('React\Socket\ServerInterface')->getMock();
+        $tcp = $this->createMock(ServerInterface::class);
         $tcp->expects($this->once())->method('close');
 
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
 
-        $server = new SecureServer($tcp, $loop, array());
+        $server = new SecureServer($tcp, $loop, []);
 
         $server->close();
     }
 
     public function testConnectionWillBeClosedWithErrorIfItIsNotAStream()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
 
         $tcp = new TcpServer(0, $loop);
 
-        $connection = $this->getMockBuilder('React\Socket\ConnectionInterface')->getMock();
+        $connection = $this->createMock(ConnectionInterface::class);
         $connection->expects($this->once())->method('close');
 
-        $server = new SecureServer($tcp, $loop, array());
+        $server = new SecureServer($tcp, $loop, []);
 
         $server->on('error', $this->expectCallableOnce());
 
-        $tcp->emit('connection', array($connection));
+        $tcp->emit('connection', [$connection]);
     }
 
     public function testConnectionWillTryToEnableEncryptionAndWaitForHandshake()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
 
         $tcp = new TcpServer(0, $loop);
 
-        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->getMock();
+        $connection = $this->createMock(Connection::class);
         $connection->expects($this->once())->method('getRemoteAddress')->willReturn('tcp://127.0.0.1:1234');
         $connection->expects($this->never())->method('close');
 
-        $server = new SecureServer($tcp, $loop, array());
+        $server = new SecureServer($tcp, $loop, []);
 
         $pending = new Promise(function () { });
 
-        $encryption = $this->getMockBuilder('React\Socket\StreamEncryption')->disableOriginalConstructor()->getMock();
+        $encryption = $this->createMock(StreamEncryption::class);
         $encryption->expects($this->once())->method('enable')->willReturn($pending);
 
         $ref = new \ReflectionProperty($server, 'encryption');
@@ -134,30 +130,30 @@ class SecureServerTest extends TestCase
 
         $ref = new \ReflectionProperty($server, 'context');
         $ref->setAccessible(true);
-        $ref->setValue($server, array());
+        $ref->setValue($server, []);
 
         $server->on('error', $this->expectCallableNever());
         $server->on('connection', $this->expectCallableNever());
 
-        $tcp->emit('connection', array($connection));
+        $tcp->emit('connection', [$connection]);
     }
 
     public function testConnectionWillBeClosedWithErrorIfEnablingEncryptionFails()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
 
         $tcp = new TcpServer(0, $loop);
 
-        $connection = $this->getMockBuilder('React\Socket\Connection')->disableOriginalConstructor()->getMock();
+        $connection = $this->createMock(Connection::class);
         $connection->expects($this->once())->method('getRemoteAddress')->willReturn('tcp://127.0.0.1:1234');
         $connection->expects($this->once())->method('close');
 
-        $server = new SecureServer($tcp, $loop, array());
+        $server = new SecureServer($tcp, $loop, []);
 
         $error = new \RuntimeException('Original');
 
-        $encryption = $this->getMockBuilder('React\Socket\StreamEncryption')->disableOriginalConstructor()->getMock();
-        $encryption->expects($this->once())->method('enable')->willReturn(\React\Promise\reject($error));
+        $encryption = $this->createMock(StreamEncryption::class);
+        $encryption->expects($this->once())->method('enable')->willReturn(reject($error));
 
         $ref = new \ReflectionProperty($server, 'encryption');
         $ref->setAccessible(true);
@@ -165,7 +161,7 @@ class SecureServerTest extends TestCase
 
         $ref = new \ReflectionProperty($server, 'context');
         $ref->setAccessible(true);
-        $ref->setValue($server, array());
+        $ref->setValue($server, []);
 
         $error = null;
         $server->on('error', $this->expectCallableOnce());
@@ -173,22 +169,22 @@ class SecureServerTest extends TestCase
             $error = $e;
         });
 
-        $tcp->emit('connection', array($connection));
+        $tcp->emit('connection', [$connection]);
 
-        $this->assertInstanceOf('RuntimeException', $error);
+        $this->assertInstanceOf(\RuntimeException::class, $error);
         $this->assertEquals('Connection from tcp://127.0.0.1:1234 failed during TLS handshake: Original', $error->getMessage());
     }
 
     public function testSocketErrorWillBeForwarded()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
 
         $tcp = new TcpServer(0, $loop);
 
-        $server = new SecureServer($tcp, $loop, array());
+        $server = new SecureServer($tcp, $loop, []);
 
         $server->on('error', $this->expectCallableOnce());
 
-        $tcp->emit('error', array(new \RuntimeException('test')));
+        $tcp->emit('error', [new \RuntimeException('test')]);
     }
 }

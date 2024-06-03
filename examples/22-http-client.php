@@ -19,7 +19,7 @@ use React\Stream\WritableResourceStream;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-$uri = isset($argv[1]) ? $argv[1] : 'www.google.com';
+$uri = $argv[1] ?? 'www.google.com';
 
 if (strpos($uri, '://') === false) {
     $uri = 'http://' . $uri;
@@ -42,7 +42,7 @@ if (($parts['scheme'] === 'http' && $parts['port'] !== 80) || ($parts['scheme'] 
     $host .= ':' . $parts['port'];
 }
 $target = ($parts['scheme'] === 'https' ? 'tls' : 'tcp') . '://' . $parts['host'] . ':' . $parts['port'];
-$resource = isset($parts['path']) ? $parts['path'] : '/';
+$resource = $parts['path'] ?? '/';
 if (isset($parts['query'])) {
     $resource .= '?' . $parts['query'];
 }

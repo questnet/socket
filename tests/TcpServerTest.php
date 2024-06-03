@@ -3,9 +3,14 @@
 namespace React\Tests\Socket;
 
 use React\EventLoop\Loop;
+use React\EventLoop\LoopInterface;
+use React\Promise\Promise;
+use React\Socket\ConnectionInterface;
 use React\Socket\TcpServer;
 use React\Stream\DuplexResourceStream;
-use React\Promise\Promise;
+use function React\Async\await;
+use function React\Promise\Timer\sleep;
+use function React\Promise\Timer\timeout;
 
 class TcpServerTest extends TestCase
 {
@@ -34,7 +39,7 @@ class TcpServerTest extends TestCase
         $ref->setAccessible(true);
         $loop = $ref->getValue($server);
 
-        $this->assertInstanceOf('React\EventLoop\LoopInterface', $loop);
+        $this->assertInstanceOf(LoopInterface::class, $loop);
 
         $server->close();
     }
@@ -47,14 +52,13 @@ class TcpServerTest extends TestCase
         $client = stream_socket_client('tcp://localhost:'.$this->port);
         assert($client !== false);
 
-        $server = $this->server;
-        $promise = new Promise(function ($resolve) use ($server) {
-            $server->on('connection', $resolve);
+        $promise = new Promise(function ($resolve) {
+            $this->server->on('connection', $resolve);
         });
 
-        $connection = \React\Async\await(\React\Promise\Timer\timeout($promise, self::TIMEOUT));
+        $connection = await(timeout($promise, self::TIMEOUT));
 
-        $this->assertInstanceOf('React\Socket\ConnectionInterface', $connection);
+        $this->assertInstanceOf(ConnectionInterface::class, $connection);
     }
 
     /**
@@ -233,7 +237,7 @@ class TcpServerTest extends TestCase
 
     public function testCtorAddsResourceToLoop()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('addReadStream');
 
         new TcpServer(0, $loop);
@@ -241,7 +245,7 @@ class TcpServerTest extends TestCase
 
     public function testResumeWithoutPauseIsNoOp()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('addReadStream');
 
         $server = new TcpServer(0, $loop);
@@ -250,7 +254,7 @@ class TcpServerTest extends TestCase
 
     public function testPauseRemovesResourceFromLoop()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('removeReadStream');
 
         $server = new TcpServer(0, $loop);
@@ -259,7 +263,7 @@ class TcpServerTest extends TestCase
 
     public function testPauseAfterPauseIsNoOp()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('removeReadStream');
 
         $server = new TcpServer(0, $loop);
@@ -269,7 +273,7 @@ class TcpServerTest extends TestCase
 
     public function testCloseRemovesResourceFromLoop()
     {
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('removeReadStream');
 
         $server = new TcpServer(0, $loop);
@@ -279,7 +283,7 @@ class TcpServerTest extends TestCase
     public function testEmitsErrorWhenAcceptListenerFailsWithoutCallingCustomErrorHandler()
     {
         $listener = null;
-        $loop = $this->getMockBuilder('React\EventLoop\LoopInterface')->getMock();
+        $loop = $this->createMock(LoopInterface::class);
         $loop->expects($this->once())->method('addReadStream')->with($this->anything(), $this->callback(function ($cb) use (&$listener) {
             $listener = $cb;
             return true;
@@ -309,7 +313,7 @@ class TcpServerTest extends TestCase
 
         $this->assertLessThan(1, $time);
 
-        $this->assertInstanceOf('RuntimeException', $exception);
+        $this->assertInstanceOf(\RuntimeException::class, $exception);
         assert($exception instanceof \RuntimeException);
         $this->assertStringStartsWith('Unable to accept new connection: ', $exception->getMessage());
 
@@ -323,10 +327,6 @@ class TcpServerTest extends TestCase
      */
     public function testEmitsTimeoutErrorWhenAcceptListenerFails(\RuntimeException $exception)
     {
-        if (defined('HHVM_VERSION')) {
-            $this->markTestSkipped('Not supported on HHVM');
-        }
-
         $this->assertEquals('Unable to accept new connection: ' . socket_strerror(SOCKET_ETIMEDOUT) . ' (ETIMEDOUT)', $exception->getMessage());
         $this->assertEquals(SOCKET_ETIMEDOUT, $exception->getCode());
     }
@@ -336,15 +336,10 @@ class TcpServerTest extends TestCase
         if (DIRECTORY_SEPARATOR === '\\') {
             $this->markTestSkipped('Windows supports listening on same port multiple times');
         }
-        if (defined('HHVM_VERSION')) {
-            $this->markTestSkipped('Not supported on HHVM');
-        }
 
-        $this->setExpectedException(
-            'RuntimeException',
-            'Failed to listen on "tcp://127.0.0.1:' . $this->port . '": ' . (function_exists('socket_strerror') ? socket_strerror(SOCKET_EADDRINUSE) . ' (EADDRINUSE)' : 'Address already in use'),
-            defined('SOCKET_EADDRINUSE') ? SOCKET_EADDRINUSE : 0
-        );
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Failed to listen on "tcp://127.0.0.1:' . $this->port . '": ' . (function_exists('socket_strerror') ? socket_strerror(SOCKET_EADDRINUSE) . ' (EADDRINUSE)' : 'Address already in use'));
+        $this->expectExceptionCode(defined('SOCKET_EADDRINUSE') ? SOCKET_EADDRINUSE : 0);
         new TcpServer($this->port);
     }
 
@@ -374,6 +369,6 @@ class TcpServerTest extends TestCase
             $this->markTestSkipped('Not supported on Windows');
         }
 
-        \React\Async\await(\React\Promise\Timer\sleep(0.0));
+        await(sleep(0.0));
     }
 }
