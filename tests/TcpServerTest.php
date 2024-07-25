@@ -26,6 +26,12 @@ class TcpServerTest extends TestCase
         $this->port = parse_url($this->server->getAddress(), PHP_URL_PORT);
     }
 
+    public function testCtorThrowsForInvalidLoop()
+    {
+        $this->setExpectedException('InvalidArgumentException', 'Argument #2 ($loop) expected null|React\EventLoop\LoopInterface');
+        new TcpServer(0, 'loop');
+    }
+
     public function testConstructWithoutLoopAssignsLoopAutomatically()
     {
         $server = new TcpServer(0);

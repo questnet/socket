@@ -9,6 +9,14 @@ use React\Socket\TimeoutConnector;
 
 class TimeoutConnectorTest extends TestCase
 {
+    public function testCtorThrowsForInvalidLoop()
+    {
+        $base = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();
+
+        $this->setExpectedException('InvalidArgumentException', 'Argument #3 ($loop) expected null|React\EventLoop\LoopInterface');
+        new TimeoutConnector($base, 0.001, 'loop');
+    }
+
     public function testConstructWithoutLoopAssignsLoopAutomatically()
     {
         $base = $this->getMockBuilder('React\Socket\ConnectorInterface')->getMock();

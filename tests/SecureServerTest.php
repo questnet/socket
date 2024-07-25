@@ -18,6 +18,14 @@ class SecureServerTest extends TestCase
         }
     }
 
+    public function testCtorThrowsForInvalidLoop()
+    {
+        $tcp = $this->getMockBuilder('React\Socket\ServerInterface')->getMock();
+
+        $this->setExpectedException('InvalidArgumentException', 'Argument #2 ($loop) expected null|React\EventLoop\LoopInterface');
+        new SecureServer($tcp, 'loop');
+    }
+
     public function testConstructWithoutLoopAssignsLoopAutomatically()
     {
         $tcp = $this->getMockBuilder('React\Socket\ServerInterface')->getMock();

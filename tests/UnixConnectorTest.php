@@ -19,6 +19,12 @@ class UnixConnectorTest extends TestCase
         $this->connector = new UnixConnector($this->loop);
     }
 
+    public function testCtorThrowsForInvalidLoop()
+    {
+        $this->setExpectedException('InvalidArgumentException', 'Argument #1 ($loop) expected null|React\EventLoop\LoopInterface');
+        new UnixConnector('loop');
+    }
+
     public function testConstructWithoutLoopAssignsLoopAutomatically()
     {
         $connector = new UnixConnector();

@@ -65,6 +65,12 @@ class SocketServerTest extends TestCase
         new SocketServer('tcp://0');
     }
 
+    public function testCtorThrowsForInvalidLoop()
+    {
+        $this->setExpectedException('InvalidArgumentException', 'Argument #3 ($loop) expected null|React\EventLoop\LoopInterface');
+        new SocketServer('127.0.0.1:0', array(), 'loop');
+    }
+
     public function testConstructorCreatesExpectedTcpServer()
     {
         $socket = new SocketServer('127.0.0.1:0', array());

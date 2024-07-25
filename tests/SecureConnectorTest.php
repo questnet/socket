@@ -26,6 +26,12 @@ class SecureConnectorTest extends TestCase
         $this->connector = new SecureConnector($this->tcp, $this->loop);
     }
 
+    public function testCtorThrowsForInvalidLoop()
+    {
+        $this->setExpectedException('InvalidArgumentException', 'Argument #2 ($loop) expected null|React\EventLoop\LoopInterface');
+        new SecureConnector($this->tcp, 'loop');
+    }
+
     public function testConstructWithoutLoopAssignsLoopAutomatically()
     {
         $connector = new SecureConnector($this->tcp);
