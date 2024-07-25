@@ -31,7 +31,7 @@ final class SocketServer extends EventEmitter implements ServerInterface
      * @throws \InvalidArgumentException if the listening address is invalid
      * @throws \RuntimeException if listening on this address fails (already in use etc.)
      */
-    public function __construct($uri, array $context = [], LoopInterface $loop = null)
+    public function __construct($uri, array $context = [], ?LoopInterface $loop = null)
     {
         // apply default options if not explicitly given
         $context += [

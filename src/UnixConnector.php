@@ -17,7 +17,7 @@ final class UnixConnector implements ConnectorInterface
 {
     private $loop;
 
-    public function __construct(LoopInterface $loop = null)
+    public function __construct(?LoopInterface $loop = null)
     {
         $this->loop = $loop ?? Loop::get();
     }

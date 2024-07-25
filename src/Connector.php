@@ -50,7 +50,7 @@ final class Connector implements ConnectorInterface
      * @param ?LoopInterface $loop
      * @throws \InvalidArgumentException for invalid arguments
      */
-    public function __construct(array $context = array(), LoopInterface $loop = null)
+    public function __construct(array $context = [], ?LoopInterface $loop = null)
     {
         // apply default options if not explicitly given
         $context += [

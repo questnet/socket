@@ -119,7 +119,7 @@ final class SecureServer extends EventEmitter implements ServerInterface
      * @see TcpServer
      * @link https://www.php.net/manual/en/context.ssl.php for TLS context options
      */
-    public function __construct(ServerInterface $tcp, LoopInterface $loop = null, array $context = [])
+    public function __construct(ServerInterface $tcp, ?LoopInterface $loop = null, array $context = [])
     {
         // default to empty passphrase to suppress blocking passphrase prompt
         $context += [
