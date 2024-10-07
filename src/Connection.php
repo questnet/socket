@@ -26,6 +26,9 @@ class Connection extends EventEmitter implements ConnectionInterface
      */
     public $unix = false;
 
+    // needed by the callbuilder project
+    public $decor;
+
     /**
      * Internal flag whether encryption has been enabled on this connection
      *
